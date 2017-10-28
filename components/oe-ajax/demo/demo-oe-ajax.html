@@ -1,0 +1,66 @@
+<!--
+  ©2016-2017 EdgeVerve Systems Limited (a fully owned Infosys subsidiary),
+  Bangalore, India. All Rights Reserved.
+-->
+
+<!doctype html>
+<html>
+
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+  <meta name="viewport" content="width=device-width, minimum-scale=1.0, initial-scale=1, user-scalable=yes">
+
+  <title>oe-ajax demo</title>
+
+  <script src="../../webcomponentsjs/webcomponents-lite.js"></script>
+
+  <link rel="import" href="../../iron-demo-helpers/demo-pages-shared-styles.html">
+  <link rel="import" href="../../iron-demo-helpers/demo-snippet.html">
+  <link rel="import" href="../../paper-styles/paper-styles.html">
+
+  <link rel="import" href="../oe-ajax.html">
+  <link rel="import" href="../../iron-image/iron-image.html">
+</head>
+
+<body>
+  <dom-module id="demo-oe-ajax">
+    <template>
+      <div class="vertical-section-container centered">
+        <h3>oe-ajax</h3>
+        <oe-ajax auto url="https://www.googleapis.com/youtube/v3/search" params='{"part":"snippet", "q":"polymer", "key": "AIzaSyAuecFZ9xJXbGDkQYWBmYrtzOGJD-iDIgI", "type": "video"}'
+          handle-as="json" last-response="{{ajaxResponse}}"></oe-ajax>
+
+        <template is="dom-repeat" items="[[ajaxResponse.items]]">
+          <div class="horizontal-section">
+            <h2><a href="[[url(item.id.videoId)]]" target="_blank">[[item.snippet.title]]</a></h2>
+            <iron-image src="[[item.snippet.thumbnails.high.url]]" width="256" height="256" sizing="cover" preload fade></iron-image>
+            <p>[[item.snippet.description]]</p>
+          </div>
+        </template>
+      </div>
+    </template>
+    <script>
+      HTMLImports.whenReady(function () {
+        Polymer({
+          is: 'demo-oe-ajax',
+          properties: {
+            ajaxResponse: {
+              type: Object
+            }
+          },
+          ready: function () {},
+          url: function (videoId) {
+            return 'https://www.youtube.com/watch?v=' + videoId;
+          }
+        });
+      });
+
+    </script>
+  </dom-module>
+
+  <demo-oe-ajax></demo-oe-ajax>
+
+</body>
+
+</html>

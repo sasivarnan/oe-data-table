@@ -1,0 +1,604 @@
+<!-- 
+  ©2016-2017 EdgeVerve Systems Limited (a fully owned Infosys subsidiary),
+  Bangalore, India. All Rights Reserved.
+-->
+<!doctype html>
+<html>
+
+<head>
+
+  <title>oe-decimal tests</title>
+
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+  <meta name="viewport" content="width=device-width, minimum-scale=1.0, initial-scale=1, user-scalable=yes">
+
+  <script src="../../webcomponentsjs/webcomponents-lite.js"></script>
+
+  <script src="../../web-component-tester/browser.js"></script>
+  <script src="../../iron-test-helpers/test-helpers.js"></script>
+  <script src="../../iron-test-helpers/mock-interactions.js"></script>
+
+  <link rel="import" href="../oe-decimal.html">
+
+</head>
+
+<body>
+
+  <test-fixture id="basic">
+    <template>
+      <oe-decimal></oe-decimal>
+    </template>
+  </test-fixture>
+
+  <test-fixture id="basic-p2">
+    <template>
+      <oe-decimal precision="2"></oe-decimal>
+    </template>
+  </test-fixture>
+
+  <test-fixture id="basic-p3">
+    <template>
+      <oe-decimal precision="3"></oe-decimal>
+    </template>
+  </test-fixture>
+  <test-fixture id="basic-p2-ng">
+    <template>
+      <oe-decimal precision="2" no-grouping></oe-decimal>
+    </template>
+  </test-fixture>
+
+
+
+  <test-fixture id="required">
+    <template>
+      <oe-decimal tabindex="0" required></oe-decimal>
+    </template>
+  </test-fixture>
+
+  <test-fixture id="min50">
+    <template>
+      <oe-decimal min="50"></oe-decimal>
+    </template>
+  </test-fixture>
+  <test-fixture id="max10000">
+    <template>
+      <oe-decimal max="10000"></oe-decimal>
+    </template>
+  </test-fixture>
+  <test-fixture id="range_100_500">
+    <template>
+      <oe-decimal min="100" max="500"></oe-decimal>
+    </template>
+  </test-fixture>
+
+
+  <test-fixture id="has-tabindex">
+    <template>
+      <oe-decimal tabindex="0"></oe-decimal>
+    </template>
+  </test-fixture>
+
+  <test-fixture id="has-label">
+    <template>
+      <oe-decimal label="foo"></oe-decimal>
+    </template>
+  </test-fixture>
+
+  <test-fixture id="percentage">
+    <template>
+      <oe-decimal label="Interest Rate" percentage precision="6"></oe-decimal>
+    </template>
+  </test-fixture>
+
+  <script>
+    suite('formatting', function () {
+
+      test('default precision 2', function () {
+        var input = fixture('basic');
+        input.set('value', 500);
+        assert.equal(input.inputElement.value, '500' + input._decimalSeparator + '00',
+          'value formatted with default precision 2');
+      });
+
+      test('setting precision value alters formatting', function () {
+        var input = fixture('basic-p3');
+        input.set('value', 123.34);
+        assert.equal(input.inputElement.value, '123' + input._decimalSeparator + '340',
+          'value formatted with custom precision');
+      });
+
+      test('when more decimal places are present, precision truncates formatted value', function () {
+        var input = fixture('basic-p2');
+        input.set('value', 123.26953454);
+        assert.equal(input.inputElement.value, '123' + input._decimalSeparator + '27',
+          'value formatted with custom precision and rounded');
+      });
+
+      test('Large values have thousands separator applied correctly', function () {
+        var input = fixture('basic-p2');
+        input.set('value', 23456);
+        assert.equal(input.inputElement.value, '23' + input._groupSeparator + '456' + input._decimalSeparator +
+          '00', 'thousands separator used correctly');
+        input.set('value', 123456);
+        assert.equal(input.inputElement.value, '123' + input._groupSeparator + '456' + input._decimalSeparator +
+          '00', 'thousands separator used correctly');
+        input.set('value', 6523456);
+        assert.equal(input.inputElement.value, '6' + input._groupSeparator + '523' + input._groupSeparator +
+          '456' + input._decimalSeparator + '00', 'thousands separator used correctly');
+      });
+
+      test('When noGrouping is set, thousands separator is NOT applied', function () {
+        var input = fixture('basic-p2-ng');
+        input.set('value', 23456.6564);
+        assert.equal(input.inputElement.value, '23456' + input._decimalSeparator + '66',
+          'thousands separator not used for noGrouping');
+      });
+
+    });
+
+    suite('parsing', function () {
+
+      test(
+        'when value is set as string, it is parsed and set as Number, display is rounded but value is kept original',
+        function () {
+          var input = fixture('basic-p2');
+          input.set('value', '1,234,56.986');
+          assert.equal(input.inputElement.value, '123' + input._groupSeparator + '456' + input._decimalSeparator +
+            '99', '1,234,56.986 -> 123,456.99');
+          assert.equal(input.value, 123456.986, '1,234,56.986 -> 123456.986');
+        });
+
+      test('shorthands without multiplier', function () {
+        var input = fixture('basic-p2');
+        input.inputElement.set('value', 'k');
+        input.inputElement.fire('change');
+        assert.equal(input.inputElement.value, '1' + input._groupSeparator + '000' + input._decimalSeparator +
+          '00', 'k -> 1,000.00');
+        assert.equal(input.value, 1000, 'k -> 1000');
+
+        input.inputElement.set('value', 'l');
+        input.inputElement.fire('change');
+        assert.equal(input.inputElement.value, '100' + input._groupSeparator + '000' + input._decimalSeparator +
+          '00', '1 lakh -> 100,000.00');
+        assert.equal(input.value, 100000, 'l -> 100000');
+
+        input.inputElement.set('value', 'm');
+        input.inputElement.fire('change');
+        assert.equal(input.inputElement.value, '1' + input._groupSeparator + '000' + input._groupSeparator +
+          '000' + input._decimalSeparator + '00', '1 million -> 1,000,000.00');
+        assert.equal(input.value, 1000000, 'm -> 1000000');
+
+        input.inputElement.set('value', 'c');
+        input.inputElement.fire('change');
+        assert.equal(input.inputElement.value, '10' + input._groupSeparator + '000' + input._groupSeparator +
+          '000' + input._decimalSeparator + '00', '1 crore -> 10,000,000.00');
+        assert.equal(input.value, 10000000, 'c -> 10000000');
+
+        input.inputElement.set('value', 'b');
+        input.inputElement.fire('change');
+        assert.equal(input.inputElement.value, '1' + input._groupSeparator + '000' + input._groupSeparator +
+          '000' + input._groupSeparator + '000' + input._decimalSeparator + '00',
+          '1 billion -> 1,000,000,000.00');
+        assert.equal(input.value, 1000000000, 'b -> 1000000000');
+
+        input.inputElement.set('value', 't');
+        input.inputElement.fire('change');
+        assert.equal(input.inputElement.value, '1' + input._groupSeparator + '000' + input._groupSeparator +
+          '000' + input._groupSeparator + '000' + input._groupSeparator + '000' + input._decimalSeparator +
+          '00', '1 trillion -> 1,000,000,000,000.00');
+        assert.equal(input.value, 1000000000000, 't -> 1000000000000');
+        //assert.equal(input.inputElement.value, input._format(1000000), '1 million -> 1,000,000.00');
+      });
+
+      test('shorthands with integer multiplier', function () {
+        var input = fixture('basic-p2');
+        input.inputElement.set('value', '13k');
+        input.inputElement.fire('change');
+        assert.equal(input.inputElement.value, '13' + input._groupSeparator + '000' + input._decimalSeparator +
+          '00', '13k -> 13,000.00');
+        assert.equal(input.value, 13000, '13k -> 13000');
+
+        input.inputElement.set('value', '2l');
+        input.inputElement.fire('change');
+        assert.equal(input.inputElement.value, '200' + input._groupSeparator + '000' + input._decimalSeparator +
+          '00', '2 lakh -> 200,000.00');
+        assert.equal(input.value, 200000, '2l -> 200000');
+
+        input.inputElement.set('value', '3m');
+        input.inputElement.fire('change');
+        assert.equal(input.inputElement.value, '3' + input._groupSeparator + '000' + input._groupSeparator +
+          '000' + input._decimalSeparator + '00', '3 million -> 3,000,000.00');
+        assert.equal(input.value, 3000000, '3m -> 3000000');
+
+        input.inputElement.set('value', '4c');
+        input.inputElement.fire('change');
+        assert.equal(input.inputElement.value, '40' + input._groupSeparator + '000' + input._groupSeparator +
+          '000' + input._decimalSeparator + '00', '4 crore -> 40,000,000.00');
+        assert.equal(input.value, 40000000, '4c -> 40000000');
+
+        input.inputElement.set('value', '5b');
+        input.inputElement.fire('change');
+        assert.equal(input.inputElement.value, '5' + input._groupSeparator + '000' + input._groupSeparator +
+          '000' + input._groupSeparator + '000' + input._decimalSeparator + '00',
+          '5 billion -> 5,000,000,000.00');
+        assert.equal(input.value, 5000000000, '5b -> 5000000000');
+
+        input.inputElement.set('value', '6t');
+        input.inputElement.fire('change');
+        assert.equal(input.inputElement.value, '6' + input._groupSeparator + '000' + input._groupSeparator +
+          '000' + input._groupSeparator + '000' + input._groupSeparator + '000' + input._decimalSeparator +
+          '00', '6 trillion -> 6,000,000,000,000.00');
+        assert.equal(input.value, 6000000000000, '6t -> 6000000000000');
+        //assert.equal(input.inputElement.value, input._format(1000000), '1 million -> 1,000,000.00');
+      });
+
+      test('shorthands with decimal multiplier', function () {
+        var input = fixture('basic-p3');
+        input.inputElement.set('value', '13.45k');
+        input.inputElement.fire('change');
+        assert.equal(input.inputElement.value, '13' + input._groupSeparator + '450' + input._decimalSeparator +
+          '000', '13.45k -> 13,450.000');
+        assert.equal(input.value, 13450, '13.45k -> 13450');
+
+        input.inputElement.set('value', '1.34343m');
+        input.inputElement.fire('change');
+        assert.equal(input.inputElement.value, '1' + input._groupSeparator + '343' + input._groupSeparator +
+          '430' + input._decimalSeparator + '000', '1.34343m -> 1,343,430.000');
+        assert.equal(input.value, 1343430.00, '1.34343m -> 1343430.000');
+
+        input.inputElement.set('value', '13.45583745354k');
+        input.inputElement.fire('change');
+        assert.equal(input.inputElement.value, '13' + input._groupSeparator + '455' + input._decimalSeparator +
+          '837', '13.45583745354k -> 13,455.837');
+        assert.equal(input.value, 13455.837, '13.45583745354k -> 13455.837');
+
+        input.inputElement.set('value', '13.45583765354k');
+        input.inputElement.fire('change');
+        assert.equal(input.inputElement.value, '13' + input._groupSeparator + '455' + input._decimalSeparator +
+          '838', '13.45583765354k -> 13,455.838');
+        assert.equal(input.value, 13455.838, '13.45583765354k -> 13455.838');
+      });
+
+    });
+
+    suite('validation', function () {
+
+      test('for required element, invalid and errorMessage should not be set by default', function () {
+        var input = fixture('required');
+        assert.isFalse(input.invalid, 'invalid is false');
+        assert.isUndefined(input.errorMessage, 'errorMessage is undefined');
+        var error = Polymer.dom(input.root).querySelector('oe-input-error');
+        assert.isFalse(error.invalid, 'invalid is false');
+        assert.isUndefined(error.errorMessage, 'errorMessage is undefined');
+      });
+
+      test('invalid attribute updated for required field', function (done) {
+        var input = fixture('required');
+
+        //MockInteractions.focus(input.inputElement);
+        //MockInteractions.blur(input.inputElement);
+        input.validate();
+        forceXIfStamp(input);
+        //input.validate();
+
+        input.async(function () {
+          var error = Polymer.dom(input.root).querySelector('oe-input-error');
+          assert.ok(error, 'oe-input-error exists');
+          assert.notEqual(getComputedStyle(error).display, 'none', 'error is not display:none');
+          assert.isTrue(input.invalid, 'invalid is true');
+          assert.equal(input.errorMessage, 'valueMissing');
+          assert.isTrue(error.invalid, 'invalid is true');
+          assert.equal(error.errorMessage, 'valueMissing');
+
+          MockInteractions.focus(input.inputElement);
+          input.inputElement.set('value', '10k');
+          input.inputElement.fire('change');
+          MockInteractions.blur(input.inputElement);
+
+          forceXIfStamp(input);
+          //assert.notEqual(getComputedStyle(error).display, 'none', 'error is not display:none');
+          assert.isFalse(input.invalid, 'invalid is false');
+          assert.isUndefined(input.errorMessage, 'errorMessage is not defined');
+          assert.isFalse(error.invalid, 'invalid is false');
+          assert.isUndefined(error.errorMessage, 'errorMessage is not defined');
+
+          done();
+        }, 1);
+      });
+
+      test('numberFormat Error, if input is not valid', function () {
+        var input = fixture('required');
+
+        MockInteractions.focus(input.inputElement);
+        input.inputElement.set('value', 'foobar');
+        input.inputElement.fire('change');
+        MockInteractions.blur(input.inputElement);
+
+
+        forceXIfStamp(input);
+        //input.validate();
+        var error = Polymer.dom(input.root).querySelector('oe-input-error');
+        assert.ok(error, 'oe-input-error exists');
+        assert.notEqual(getComputedStyle(error).display, 'none', 'error is not display:none');
+        assert.isTrue(input.invalid, 'invalid is true');
+        assert.equal(input.errorMessage, 'numberFormat');
+        assert.isTrue(error.invalid, 'invalid is true');
+        assert.equal(error.errorMessage, 'numberFormat');
+
+        MockInteractions.focus(input);
+        input.inputElement.set('value', '1.2k');
+        input.inputElement.fire('change');
+        MockInteractions.blur(input);
+
+        forceXIfStamp(input);
+        //assert.notEqual(getComputedStyle(error).display, 'none', 'error is not display:none');
+        assert.isFalse(input.invalid, 'after correction, invalid is false');
+        assert.isUndefined(input.errorMessage, 'after correction, errorMessage is not defined');
+        assert.isFalse(error.invalid, 'after correction, invalid is false');
+        assert.isUndefined(error.errorMessage, 'after correction, errorMessage is not defined');
+
+      });
+
+      test('rangeUnderflow Error, if input is less than min', function () {
+        var input = fixture('min50');
+
+        MockInteractions.focus(input.inputElement);
+        input.inputElement.set('value', '10');
+        input.inputElement.fire('change');
+        MockInteractions.blur(input.inputElement);
+
+
+        forceXIfStamp(input);
+        //input.validate();
+        var error = Polymer.dom(input.root).querySelector('oe-input-error');
+        assert.ok(error, 'oe-input-error exists');
+        assert.notEqual(getComputedStyle(error).display, 'none', 'error is not display:none');
+        assert.isTrue(input.invalid, 'invalid is true');
+        assert.equal(input.errorMessage, 'rangeUnderflow');
+        assert.isTrue(error.invalid, 'invalid is true');
+        assert.equal(error.errorMessage, 'rangeUnderflow');
+
+        MockInteractions.focus(input.inputElement);
+        input.inputElement.set('value', '50');
+        input.inputElement.fire('change');
+        MockInteractions.blur(input.inputElement);
+
+        forceXIfStamp(input);
+        //assert.notEqual(getComputedStyle(error).display, 'none', 'error is not display:none');
+        assert.isFalse(input.invalid, 'after correction, invalid is false');
+        assert.isUndefined(input.errorMessage, 'after correction, errorMessage is not defined');
+        assert.isFalse(error.invalid, 'after correction, invalid is false');
+        assert.isUndefined(error.errorMessage, 'after correction, errorMessage is not defined');
+
+      });
+      test('rangeOverflow Error, if input is more than max', function () {
+        var input = fixture('max10000');
+
+        MockInteractions.focus(input.inputElement);
+        input.inputElement.set('value', '50k');
+        input.inputElement.fire('change');
+        MockInteractions.blur(input.inputElement);
+
+
+        forceXIfStamp(input);
+        //input.validate();
+        var error = Polymer.dom(input.root).querySelector('oe-input-error');
+        assert.ok(error, 'oe-input-error exists');
+        assert.notEqual(getComputedStyle(error).display, 'none', 'error is not display:none');
+        assert.isTrue(input.invalid, 'invalid is true');
+        assert.equal(input.errorMessage, 'rangeOverflow');
+        assert.isTrue(error.invalid, 'invalid is true');
+        assert.equal(error.errorMessage, 'rangeOverflow');
+
+        MockInteractions.focus(input.inputElement);
+        input.inputElement.set('value', '9999');
+        input.inputElement.fire('change');
+        MockInteractions.blur(input.inputElement);
+
+        forceXIfStamp(input);
+        //assert.notEqual(getComputedStyle(error).display, 'none', 'error is not display:none');
+        assert.isFalse(input.invalid, 'after correction, invalid is false');
+        assert.isUndefined(input.errorMessage, 'after correction, errorMessage is not defined');
+        assert.isFalse(error.invalid, 'after correction, invalid is false');
+        assert.isUndefined(error.errorMessage, 'after correction, errorMessage is not defined');
+
+        MockInteractions.focus(input.inputElement);
+        input.inputElement.set('value', '10001');
+        input.inputElement.fire('change');
+        MockInteractions.blur(input.inputElement);
+
+
+        forceXIfStamp(input);
+        //input.validate();
+        error = Polymer.dom(input.root).querySelector('oe-input-error');
+        assert.ok(error, 'oe-input-error exists');
+        assert.notEqual(getComputedStyle(error).display, 'none', 'error is not display:none');
+        assert.isTrue(input.invalid, 'invalid is true');
+        assert.equal(input.errorMessage, 'rangeOverflow');
+        assert.isTrue(error.invalid, 'invalid is true');
+        assert.equal(error.errorMessage, 'rangeOverflow');
+
+        MockInteractions.focus(input.inputElement);
+        input.inputElement.set('value', '10000');
+        input.inputElement.fire('change');
+        MockInteractions.blur(input.inputElement);
+
+        forceXIfStamp(input);
+        //assert.notEqual(getComputedStyle(error).display, 'none', 'error is not display:none');
+        assert.isFalse(input.invalid, 'after correction, invalid is false');
+        assert.isUndefined(input.errorMessage, 'after correction, errorMessage is not defined');
+        assert.isFalse(error.invalid, 'after correction, invalid is false');
+        assert.isUndefined(error.errorMessage, 'after correction, errorMessage is not defined');
+
+      });
+
+
+      test('rangeOverflow/rangeUnderflow Error, if input is not within specified range', function () {
+        var input = fixture('range_100_500');
+
+        MockInteractions.focus(input.inputElement);
+        input.inputElement.set('value', '501');
+        input.inputElement.fire('change');
+        MockInteractions.blur(input.inputElement);
+
+        forceXIfStamp(input);
+        //input.validate();
+        var error = Polymer.dom(input.root).querySelector('oe-input-error');
+        assert.ok(error, 'oe-input-error exists');
+        assert.notEqual(getComputedStyle(error).display, 'none', 'error is not display:none');
+        assert.isTrue(input.invalid, 'invalid is true');
+        assert.equal(input.errorMessage, 'rangeOverflow');
+        assert.isTrue(error.invalid, 'invalid is true');
+        assert.equal(error.errorMessage, 'rangeOverflow');
+
+        MockInteractions.focus(input.inputElement);
+        input.inputElement.set('value', '500');
+        input.inputElement.fire('change');
+        MockInteractions.blur(input.inputElement);
+
+        forceXIfStamp(input);
+        //assert.notEqual(getComputedStyle(error).display, 'none', 'error is not display:none');
+        assert.isFalse(input.invalid, 'max borderline, invalid is false');
+        assert.isUndefined(input.errorMessage, 'max borderline, errorMessage is not defined');
+        assert.isFalse(error.invalid, 'max borderline, invalid is false');
+        assert.isUndefined(error.errorMessage, 'max borderline, errorMessage is not defined');
+
+        MockInteractions.focus(input.inputElement);
+        input.inputElement.set('value', '99');
+        input.inputElement.fire('change');
+        MockInteractions.blur(input.inputElement);
+
+
+        forceXIfStamp(input);
+        //input.validate();
+        error = Polymer.dom(input.root).querySelector('oe-input-error');
+        assert.ok(error, 'oe-input-error exists');
+        assert.notEqual(getComputedStyle(error).display, 'none', 'error is not display:none');
+        assert.isTrue(input.invalid, 'invalid is true');
+        assert.equal(input.errorMessage, 'rangeUnderflow');
+        assert.isTrue(error.invalid, 'invalid is true');
+        assert.equal(error.errorMessage, 'rangeUnderflow');
+
+
+        MockInteractions.focus(input.inputElement);
+        input.inputElement.set('value', '100');
+        input.inputElement.fire('change');
+        MockInteractions.blur(input.inputElement);
+
+        forceXIfStamp(input);
+        //assert.notEqual(getComputedStyle(error).display, 'none', 'error is not display:none');
+        assert.isFalse(input.invalid, 'min borderline, invalid is false');
+        assert.isUndefined(input.errorMessage, 'min borderline, errorMessage is not defined');
+        assert.isFalse(error.invalid, 'min borderline, invalid is false');
+        assert.isUndefined(error.errorMessage, 'min borderline, errorMessage is not defined');
+
+        MockInteractions.focus(input.inputElement);
+        input.inputElement.set('value', '287');
+        input.inputElement.fire('change');
+        MockInteractions.blur(input.inputElement);
+
+        forceXIfStamp(input);
+        //assert.notEqual(getComputedStyle(error).display, 'none', 'error is not display:none');
+        assert.isFalse(input.invalid, 'after correction, invalid is false');
+        assert.isUndefined(input.errorMessage, 'after correction, errorMessage is not defined');
+        assert.isFalse(error.invalid, 'after correction, invalid is false');
+        assert.isUndefined(error.errorMessage, 'after correction, errorMessage is not defined');
+      });
+
+    });
+
+
+    suite('percentage', function () {
+
+      test('should have percentage property', function () {
+        var input = fixture('percentage');
+        assert.isTrue(input.percentage, 'percentage is defined and is true');
+      });
+
+      //            test('should have percentage suffix', function(){
+      //                var input = fixture('percentage');
+      //                var suffix = input.querySelector('[suffix]');
+      //                assert.ok(suffix, 'suffix is present');
+      //                assert.equal(suffix.innerHTML,'%');
+      //            });
+
+      test('when value is set, display is 100*value', function () {
+        var input = fixture('percentage');
+        input.set('value', 0.03423);
+        assert.equal(input.inputElement.value, '3' + input._decimalSeparator + '423000', '0.03423 -> 3.423000');
+        assert.equal(input.value, 0.03423);
+      });
+
+
+      test('when display is entered, value is set as display/100', function () {
+        var input = fixture('percentage');
+        input.inputElement.set('value', '2.54534');
+        input.inputElement.fire('change');
+        assert.equal(input.inputElement.value, '2' + input._decimalSeparator + '545340', '2.54534 -> 2.545340');
+        assert.equal(input.value, 0.0254534, '2.54534 -> 0.0254534');
+      });
+
+      test('grouping is not applied on percentage values', function () {
+        var input = fixture('percentage');
+        input.inputElement.set('value', '1022.54534');
+        input.inputElement.fire('change');
+        assert.equal(input.inputElement.value, '1022' + input._decimalSeparator + '545340',
+          '1022.54534 -> 1022.545340');
+        assert.equal(input.value, 10.2254534, '1022.54534 -> 10.2254534');
+      });
+
+
+      test('changing percentage to false, toggles display', function () {
+        var input = fixture('percentage');
+        input.inputElement.set('value', '1' + input._decimalSeparator + '656');
+        input.inputElement.fire('change');
+        assert.equal(input.inputElement.value, '1' + input._decimalSeparator + '656000', '0.01565 -> 1.656');
+        assert.equal(input.value, 0.01656, '1.656 -> 0.01656');
+        input.percentage = false;
+        assert.equal(input.value, 0.01656);
+        assert.equal(input.inputElement.value, '0.016560');
+
+      });
+
+    });
+
+    suite('a11y', function () {
+
+      test('has aria-labelledby', function () {
+        var input = fixture('has-label');
+        assert.isTrue(input.inputElement.hasAttribute('aria-labelledby'))
+        assert.equal(input.inputElement.getAttribute('aria-labelledby'), Polymer.dom(input.root).querySelector(
+          'label').id, 'aria-labelledby points to the label');
+      });
+
+      test('has aria-describedby for error message', function () {
+        var input = fixture('required');
+        forceXIfStamp(input);
+        assert.isTrue(input.inputElement.hasAttribute('aria-describedby'));
+        assert.equal(input.inputElement.getAttribute('aria-describedby'), Polymer.dom(input.root).querySelector(
+          'oe-input-error').id, 'aria-describedby points to the error message');
+      });
+
+      test('focus an input with tabindex', function (done) {
+        var input = fixture('has-tabindex');
+        flush(function () {
+          MockInteractions.focus(input);
+          flush(function () {
+            assert.equal(input.shadowRoot ? input.shadowRoot.activeElement :
+              document.activeElement, input._focusableElement);
+            done();
+          });
+        });
+      });
+
+
+      a11ySuite('basic'); // eslint-disable-line no-undef
+
+    });
+
+  </script>
+
+</body>
+
+</html>

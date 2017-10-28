@@ -1,0 +1,27 @@
+{
+  "name": "oe-input",
+  "main": [
+    "oe-input.html",
+    "oe-decimal.html",
+    "oe-input-masked.html",
+    "oe-json-input.html",
+    "oe-textarea.html"
+  ],
+  "dependencies": {
+    "polymer": "Polymer/polymer#^1.4.0",
+    "oe-input-error": "^0.9.0",
+    "oe-i18n-msg": "^0.8.0",
+    "paper-input": "^1.1.24",
+    "iron-image": "^1.2.6",
+    "oe-field-behavior": "^0.9.0",
+    "iron-validator-behavior": "^1.0.2",
+    "oe-data-mask-behavior": "^0.9.0"
+  },
+  "devDependencies": {
+    "iron-component-page": "PolymerElements/iron-component-page#^1.0.0",
+    "iron-demo-helpers": "PolymerElements/iron-demo-helpers#^1.0.0",
+    "web-component-tester": "^4.0.0",
+    "webcomponentsjs": "webcomponents/webcomponentsjs#^0.7.0",
+    "iron-test-helpers": "^1.4.1"
+  }
+}

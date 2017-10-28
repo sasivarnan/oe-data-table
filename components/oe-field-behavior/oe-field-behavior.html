@@ -1,0 +1,141 @@
+<!-- 
+  ©2016-2017 EdgeVerve Systems Limited (a fully owned Infosys subsidiary),
+  Bangalore, India. All Rights Reserved.
+-->
+<link rel="import" href="../polymer/polymer.html">
+
+<script>
+  var OEUtils = OEUtils || {};
+
+  /** @polymerBehavior OEUtils.FieldBehavior */
+  OEUtils.FieldBehavior = {
+    properties: {
+
+      /* i18n placeholders for the error */
+      errorPlaceholders: {
+        type: Array
+      },
+      /* Custom error message/code */
+      userErrorMessage: {
+        type: String
+      },
+      hidden: {
+        type: Boolean,
+        reflectToAttribute: true,
+        value: false
+      },
+      /* Custom validation function */
+      validationFunction: {
+        type: String
+      },
+      validateOnInput: {
+        type: Boolean
+      },
+      /* binding to property */
+      fieldId: String
+    },
+    setValidity: function (isValid, errorMessage, errorPlaceholders) {
+
+      if(!isValid && errorMessage) {
+        errorMessage = this.userErrorMessage || errorMessage;
+      }
+      this._setValidity(isValid, errorMessage, errorPlaceholders);
+
+      if (this.fieldId) {
+        if (isValid) {
+          this.fire('oe-field-ok', {
+            fieldId: this.fieldId
+          });
+        } else {
+          this.fire('oe-field-error', {
+            fieldId: this.fieldId,
+            errorMessage: errorMessage
+          });
+        }
+      }
+    },
+    _setValidity: function (isValid, errorMessage, errorPlaceholders) {
+      this.set('invalid', !isValid);
+      this.set('errorMessage', errorMessage);
+      if (!isValid) {
+        errorPlaceholders = errorPlaceholders || this;
+        this.set('errorPlaceholders', errorPlaceholders);
+      }
+    },
+
+    /*
+    override in individual elements to return element specific validity.
+    */
+    _validate: function () {
+      return true;
+    },
+    _deepValue: function (obj, path) {
+      path = path.split('.');
+      for (var i = 0, len = path.length; obj && i < len; i++) {
+        obj = obj[path[i]];
+      }
+      return obj;
+    },
+
+    /* validate, overrides Paper-Input-Behavior's validate method
+       since, we also need to set errorMessage which is not supported in PaperInputBehavior
+    */
+    validate: function () {
+
+      var key;
+      var coreElem = this.inputElement;
+      var isValid = this._validate();
+      if (isValid && this.validationFunction) {
+        isValid = this.validationFunction(this.value);
+      }
+      if (isValid && coreElem && coreElem.validity) {
+        if (coreElem.validity.valid === false) {
+          for (var err in coreElem.validity) {
+            if (err !== 'valid' && coreElem.validity[err] === true) {
+              if (err === 'customError') {
+                key = coreElem.validationMessage;
+              } else {
+                key = err;
+              }
+              break;
+            }
+          }
+        }
+
+        isValid = coreElem.validity.valid;
+        if (this.max && this.value > this.max) {
+          this.setValidity(false, 'rangeOverflow');
+          isValid = false;
+        } else if (this.min && this.value < this.min) {
+          this.setValidity(false, 'rangeUnderflow');
+          isValid = false;
+        } else {
+          this.setValidity(isValid, key);
+        }
+      }
+      return isValid;
+    },
+    attached: function () {
+      if (this.fieldId) {
+        this.fire('register-field', {
+          fieldId: this.fieldId
+        });
+      }
+
+      if (typeof this.validationFunction === 'string') {
+        var validationFunction = this._deepValue(window, this.validationFunction);
+        if (validationFunction && typeof validationFunction === 'function') {
+          this.validationFunction = validationFunction;
+        } else {
+          console.warn('Invalid or undefined validationFunction [' + this.validationFunction + ']');
+          this.validationFunction = undefined;
+        }
+      }
+
+      if (this.validateOnInput) {
+        this.listen(this, 'input', 'validate');
+      }
+    }
+  };
+
+</script>

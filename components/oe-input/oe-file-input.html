@@ -1,0 +1,192 @@
+<!--
+  ©2016-2017 EdgeVerve Systems Limited (a fully owned Infosys subsidiary),
+  Bangalore, India. All Rights Reserved.
+-->
+
+<link rel="import" href="../paper-button/paper-button.html">
+<link rel="import" href="../iron-image/iron-image.html">
+<link rel="import" href="../paper-icon-button/paper-icon-button.html">
+<link rel="import" href="../oe-field-behavior/oe-field-behavior.html">
+<link rel="import" href="behaviors/oe-utils-behavior.html">
+
+<!--
+### oe-file-input
+
+`<oe-file-input>` is a input control that lets the user to select single or multiple file(s) and POST them to a specified URL.
+The files can be selected either by using the file picker dialog or by dragging and dropping into the control.
+Images can be previewed before uploading.
+
+-->
+
+<dom-module id="oe-file-input">
+
+  <template>
+    <style>
+      .preview-img {
+        border: 1px solid var(--image-preview-border,#D4D4D4);
+        margin: 8px 0px;
+      }
+      .launch-button{
+        height: auto;
+      }
+    </style>
+
+    <input type="file" id="fileInput" hidden accept="[[accept]]" on-change="_fileSelected" />
+    <div id="dropArea" class="layout horizontal">
+      <paper-button on-tap="_selectFile" raised>
+        <div hidden$="[[value]]">
+          Choose or drop files
+        </div>
+        <template is="dom-if" if=[[value]]>
+          <div class="file-preview layout vertical">
+            <template is="dom-if" if=[[_isImage(fileType)]]>
+              <iron-image src="[[value]]" style="width:100px;height:100px" sizing="contain" class="preview-img"></iron-image>
+            </template>
+            <template is="dom-repeat" items={{_listToArray(files)}}>
+              <label>{{item.name}}</label>
+            </template>
+          </div>
+        </template>
+      </paper-button>
+      <template is="dom-if" if="{{_and(postUrl,files)}}">
+        <paper-icon-button icon="file-upload" on-tap="_uploadFiles"></paper-icon-button>
+      </template>
+    </div>
+  </template>
+</dom-module>
+<script>
+  Polymer({
+    is: 'oe-file-input',
+    properties: {
+      multiple: {
+        type: Boolean,
+        observer: '_multipleChanged'
+      },
+      accept: {
+        type: String
+      },
+      valueType: {
+        type: String
+      },
+      value: {
+        type: Object,
+        notify: true
+      },
+      fileName: {
+        type: String,
+        notify: true
+      },
+      files: {
+        type: Object
+      },
+      postUrl: {
+        type: String
+      }
+    },
+    behaviors: [
+      OEUtils.UtilsBehavior
+    ],
+    attached: function () {
+      this.set('value', undefined);
+      var element = this.$.dropArea;
+      var self = this;
+      element.addEventListener('dragenter', function (e) {
+        e.preventDefault();
+      });
+      element.addEventListener('dragover', function (e) {
+        e.preventDefault();
+      });
+      element.addEventListener('drop', function (e) {
+        e.preventDefault();
+        self.processFiles(e.dataTransfer.files);
+      }, false);
+    },
+    _and: function (a, b) {
+      return a && b;
+    },
+    _isImage: function (type) {
+      return type && type.startsWith('image');
+    },
+    _multipleChanged: function (newValue) {
+      this.$.fileInput.multiple = newValue;
+    },
+    _selectFile: function () {
+      this.$.fileInput.click();
+    },
+    _listToArray: function (list) {
+      return Array.from(list);
+    },
+    _fileSelected: function (e) {
+      this.processFiles(e.target.files);
+    },
+    processFiles: function (files) {
+      this.set('fileName', undefined);
+      this.set('fileType', undefined);
+      this.set('files', files);
+      if (this.multiple) {
+        this.set('value', files);
+      } else if (this.valueType === 'file') {
+        if (this.files && this.files.length > 0) {
+          this.set('value', this.files[0]);
+          this.set('fileName', this.files[0].name);
+          this.set('fileType', this.files[0].type);
+        } else {
+          this.set('value', undefined);
+        }
+      } else {
+        //Read the file data
+        if (this.files && this.files.length > 0) {
+          this.set('fileName', this.files[0].name);
+          this.set('fileType', this.files[0].type);
+
+          var reader = new FileReader();
+          reader.onloadend = function (evt) {
+            if (evt.target.readyState == FileReader.DONE) {
+              var result = evt.target.result;
+              this.set('value', result);
+            } else if (evt.target.readyState == FileReader.EMPTY) {
+              this.set('value', undefined);
+            }
+          }.bind(this);
+          if (this.valueType === 'binary') {
+            reader.readAsBinaryString(this.files[0]);
+          } else {
+            reader.readAsDataURL(this.files[0]);
+          }
+        } else {
+          this.set('value', undefined);
+        }
+      }
+    },
+    _uploadFiles: function (e) { // eslint-disable-line no-unused-vars
+      var self = this;
+      if (this.files && this.postUrl) {
+        var promises = [];
+        for (var i = 0; i < this.files.length; i++) {
+          promises.push(this.sendFile(this.files[i], this.postUrl));
+        }
+
+        Promise.all(promises).then(function (results) {
+          self.fire('files-uploaded', results);
+          //console.log('back from all promises', results);
+        });
+      }
+    },
+    sendFile: function (file, url) {
+      return new Promise(function (resolve, reject) { // eslint-disable-line no-unused-vars
+        var xhr = new XMLHttpRequest();
+        var fd = new FormData();
+
+        xhr.open('POST', url, true);
+        xhr.onreadystatechange = function () {
+          if (xhr.readyState == 4 && xhr.status == 200) {
+            resolve(JSON.parse(xhr.responseText).result.files.file[0]);
+          }
+        };
+        fd.append('file', file);
+        xhr.send(fd);
+      });
+    }
+  });
+
+</script>

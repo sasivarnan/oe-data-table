@@ -1,0 +1,1189 @@
+<!--
+  ©2016-2017 EdgeVerve Systems Limited (a fully owned Infosys subsidiary),
+  Bangalore, India. All Rights Reserved.
+-->
+
+<link rel="import" href="behaviors/oe-utils-behavior.html">
+<link rel="import" href="../oe-ajax/oe-ajax.html">
+<script src="../oe-utils/oe-utils.js"></script>
+
+<script>
+  window.OEUtils = window.OEUtils || {};
+  var OEUtils = window.OEUtils;
+  OEUtils.metadataCache = OEUtils.metadataCache || {};
+  OEUtils.modelDefCache = OEUtils.modelDefCache || {};
+
+  OEUtils.deepValue = function (obj, path) {
+    for (var i = 0, path = path.split('.'), len = path.length; obj && i < len; i++) { // eslint-disable-line no-redeclare
+      obj = obj[path[i]];
+    }
+    return obj;
+  };
+
+  OEUtils.createFunction = function (funcStr) {
+    funcStr = funcStr.trim();
+    if (funcStr.startsWith('function')) {
+      var head = funcStr.substr(0, funcStr.indexOf('{'));
+      var body = funcStr.substring(funcStr.indexOf('{') + 1, funcStr.lastIndexOf('}'));
+      var args = head.replace(/\s/g, '').replace('function(', '').replace(')', '').split(',');
+      return new Function(args, body);
+    } else {
+      return new Function(funcStr);
+    }
+  };
+
+
+  var dropdownFormatter = function (value, options) {
+
+    if (value && options.valueproperty) {
+      return new Promise(function (resolve, reject) {
+        var metaAjax = document.createElement('oe-ajax');
+        metaAjax.contentType = 'application/json';
+        metaAjax.handleAs = 'json';
+        var re = new RegExp('VALUE_STRING', 'g');
+        metaAjax.url = options.dataurl.replace(re, encodeURI(value));
+        metaAjax.addEventListener('response', function (event) {
+          resolve(event.detail.response);
+        });
+        metaAjax.addEventListener('error', function (event) {
+          reject(OEUtils.extractErrorMessage(event));
+        });
+        metaAjax.generateRequest();
+      });
+    } else if (value && options.displayproperty) {
+      return value[options.displayproperty];
+    } else {
+      return value;
+    }
+  };
+
+  OEUtils.TypeMappings = OEUtils.TypeMappings || {};
+  OEUtils.TypeMappings.date = OEUtils.TypeMappings.date || {
+      uiType: 'oe-date',
+      formatter: function (value, options) {
+        if (!value) {
+          return value;
+        }
+        var format = (options && options.format) ? options.format : 'DD MMM YYYY';
+        return OEUtils.DateUtils.format(value, format);
+      }
+  };
+  OEUtils.TypeMappings.timestamp = OEUtils.TypeMappings.timestamp || {
+      uiType: 'oe-datetime',
+      formatter: function (value, options) {
+        if (!value) {
+          return value;
+        }
+        var format = (options && options.format) ? options.format : 'DD MMM YYYY';
+        return OEUtils.DateUtils.format(value, format);
+      }
+  };
+  OEUtils.TypeMappings.string = OEUtils.TypeMappings.string || {
+      uiType: 'oe-input'
+  };
+  OEUtils.TypeMappings.integer = OEUtils.TypeMappings.integer || {
+      uiType: 'oe-input',
+      attributes: [{
+        name: 'type',
+        value: 'number'
+      }]
+  };
+  OEUtils.TypeMappings.number = OEUtils.TypeMappings.number || {
+      uiType: 'oe-decimal',
+      formatter: function (value, options) {
+        return ((value !== null && value !== undefined) && (options && options.precision)) ? Number(value).toLocaleString(
+          undefined, {
+            minimumFractionDigits: options.precision,
+            maximumFractionDigits: options.precision
+          }) : value;
+      }
+  };
+  OEUtils.TypeMappings.boolean = OEUtils.TypeMappings.boolean || {
+      uiType: 'oe-checkbox'
+  };
+  OEUtils.TypeMappings.combo = OEUtils.TypeMappings.combo || {
+      uiType: 'oe-combo',
+      formatter: dropdownFormatter
+  };
+  OEUtils.TypeMappings.tags = OEUtils.TypeMappings.tags || {
+      uiType: 'oe-paper-chip'
+  };
+  OEUtils.TypeMappings.list = OEUtils.TypeMappings.list || {
+      uiType: 'oe-list'
+  };
+  OEUtils.TypeMappings.grid = OEUtils.TypeMappings.grid || {
+      uiType: 'oe-data-table'
+  };
+  OEUtils.TypeMappings.object = OEUtils.TypeMappings.object || {
+      uiType: 'oe-json-input',
+      formatter: function (value, options) { // eslint-disable-line no-unused-vars
+        if (value && typeof value === 'object') {
+          return JSON.stringify(value);
+        }
+        return value;
+      }
+  };
+  OEUtils.TypeMappings.objectid = OEUtils.TypeMappings.objectid || {
+      uiType: 'oe-input'
+  };
+  OEUtils.TypeMappings.typeahead = OEUtils.TypeMappings.typeahead || {
+      uiType: 'oe-typeahead',
+      formatter: dropdownFormatter
+  };
+  OEUtils.TypeMappings.documentdata = OEUtils.TypeMappings.documentdata || {
+      uiType: 'oe-document-data'
+  };
+
+  (function () {
+    var xhttp = new XMLHttpRequest();
+    xhttp.onreadystatechange = function () {
+      if (xhttp.readyState === 4 && xhttp.status === 200) {
+        var typeMappings = JSON.parse(xhttp.responseText);
+        typeMappings.forEach(function (mapping) {
+          OEUtils.TypeMappings[mapping.type] = mapping;
+        });
+      }
+    };
+    var url = OEUtils.geturl('/api/TypeMappings');
+    xhttp.open('GET', url, true);
+    xhttp.setRequestHeader('Content-Type', 'application/json;charset=encoding');
+    xhttp.send();
+  })();
+
+  (function(){ 
+    var deepQuery = function(selector){
+      var result = this.querySelector(selector);
+      if(!result){
+        var templates = this.querySelectorAll('template');
+        for(var i = 0,len = templates.length;i<len;i++){
+          result =templates[i].content.deepQuery(selector);
+          if(result){
+            return result;
+          }
+        }
+      }else{
+        return result;
+      }
+    }
+    Element.prototype.deepQuery = deepQuery;
+    DocumentFragment.prototype.deepQuery = deepQuery;
+    Document.prototype.deepQuery = deepQuery;
+  })();
+
+  // fields....
+  //    field1
+  //       tab=main
+  // field2
+  //     tab=detail
+  //     box=detail1
+  // field3
+  //      tab=detail
+  //      box = detail2
+
+
+  //
+  //      <paper-tab  evfields tab=mytab>
+  //
+  //      <paper-tab>
+  //              <box evfields tab=mytab box=box1>
+  //
+
+  OEUtils.MetaBehavior = {
+    ready: function () {
+      this._isEVMeta = true;
+      if (OEUtils.metadataCache[this.is]) {
+        var meta = OEUtils.metadataCache[this.is];
+        this.set('meta', meta);
+        this.set('modelAlias', meta.modelAlias);
+        meta.metadata = meta.metadata || {};
+        var resturl = meta.resturl || meta.metadata.resturl;
+        if(resturl){
+          var urlIsSingular = (resturl.charAt(resturl.length-1) === '$');
+          resturl = urlIsSingular?resturl.substr(0,resturl.length-1):resturl;
+          this.set('urlIsSingular', urlIsSingular);
+          this.set('resturl', resturl);
+        }
+        this.set('defaultVM', meta.defaultVM);
+
+        this.set('_fieldsmeta', meta.metadata.properties);
+      }
+    },
+    attached: function () {
+      this.fire('meta-attached', {
+        is: this.is
+      });
+    }
+  };
+
+  OEUtils.getModelDefinition = function (model, done) {
+    if (OEUtils.modelDefCache[model]) {
+      done(null, OEUtils.modelDefCache[model]);
+    } else {
+      var xhttp = new XMLHttpRequest();
+      xhttp.onreadystatechange = function () {
+        if (xhttp.readyState === 4 && xhttp.status === 200) {
+          var modelDefinition = JSON.parse(xhttp.responseText);
+          OEUtils.modelDefCache[model] = modelDefinition[model];
+          done(null, OEUtils.modelDefCache[model]);
+        }
+      };
+      var url = OEUtils.geturl('/api/ModelDefinitions/modelmeta/' + model);
+      xhttp.open('GET', url, true);
+      xhttp.setRequestHeader('Content-Type', 'application/json;charset=encoding');
+      xhttp.send();
+    }
+  };
+
+  OEUtils.Metamorph = function (template, uimeta, prototype) {
+    var templateCont = template.content;
+
+    function _getModelDefaultVM(modelName, models) {
+      var defaultVM = {};
+      var model = models[modelName];
+      if(model) {
+        for(var propName in model.properties){
+          var propData = model.properties[propName];
+          if(propData.default !== undefined){
+            defaultVM[propName] = propData.default;
+          }
+          if(propData.type === 'boolean'){
+            defaultVM[propName] = propData.default || false;
+          } else if(propData.type === 'model'){
+            defaultVM[propName] = _getModelDefaultVM(propData.modeltype, models);
+          }
+        }
+      }
+      return defaultVM;
+    }
+    
+    function camelCaseToLabel(s) {
+      //Make the first character uppercase before split/join.
+      if(s.charAt(0) === '_'){
+        s = s.substr(1);
+      }
+      return (s.charAt(0).toUpperCase() + s.slice(1)).split(/(?=[A-Z])/).join(' ');
+    }
+
+    var empty = document.createElement('template');
+    function createNodeForElement(type) {
+      var str = '<' + type + '></' + type + '>';
+      empty.innerHTML = str;
+      //return empty.content.removeChild(empty.content.children[0]); //content.children breaks IE
+      return empty.content.removeChild(empty.content.childNodes[0]);
+    }
+
+    function createMergedNode(fmeta, e) {
+      var typeMap = window.OEUtils.TypeMappings[fmeta.type] || {};
+      fmeta.uitype = fmeta.uitype || typeMap.uiType || 'oe-input';
+      var obj = {};
+      typeMap.attributes && typeMap.attributes.forEach(function (attr) {
+        obj[attr.name] = attr.value;
+      });
+      if (e.hasAttributes()) {
+        var attrs = e.attributes;
+        for (var j = attrs.length - 1; j >= 0; j--) {
+          obj[attrs[j].name] = attrs[j].value;
+        }
+      }
+
+      var str = '<' + fmeta.uitype + ' ';
+      Object.keys(obj).forEach(function (key) {
+        var attrValue = obj[key];
+        if (typeof attrValue === 'object') {
+          str += key + "='" + JSON.stringify(attrValue) + "' ";
+        } else {
+          str += key + '="' + attrValue + '" ';
+        }
+      });
+      str += '></' + fmeta.uitype + '>';
+      empty.innerHTML = str;
+      //return empty.content.removeChild(empty.content.children[0]); //content.children breaks IE
+      return empty.content.removeChild(empty.content.childNodes[0]);
+    }
+
+    function createNodeForMetaDefn(fmeta) {
+      var typeMap = window.OEUtils.TypeMappings[fmeta.numericality || fmeta.type] || {};
+      fmeta.uitype = fmeta.uitype || typeMap.uiType || 'oe-input';
+      var node = createNodeForElement(fmeta.uitype);
+      typeMap.attributes && typeMap.attributes.forEach(function (attr) {
+        if (typeof attr.value === 'object') {
+          node.setAttribute(attr.name, JSON.stringify(attr.value));
+        } else {
+          node.setAttribute(attr.name, attr.value);
+        }
+      });
+      return node;
+    }
+
+    function setMissingAttributes(node, attributes) {
+      attributes && attributes.forEach(function (attr) {
+        if (!node.getAttribute(attr.name)) {
+          if (typeof attr.value === 'object') {
+            node.setAttribute(attr.name, JSON.stringify(attr.value));
+          } else {
+            node.setAttribute(attr.name, attr.value);
+          }
+        }
+      });
+    }
+
+    function getPrimaryKey(uimeta) {
+      var primaryKey = 'id';
+      if (uimeta) {
+        for (var prop in uimeta.metadata.properties) {
+          if (uimeta.metadata.properties[prop].id) {
+            primaryKey = prop;
+          }
+        }
+        return primaryKey;
+      }
+      return primaryKey;
+    }
+
+    function setAttributesOnNode(node, fieldId, fmeta, uimeta, parentNode, override) {
+      var modelAlias = uimeta.modelAlias;
+      parentNode = parentNode || node.parentNode;
+      var expressionAttributes = ['label', 'textContent', 'value', 'class', 'required', 'disabled', 'hidden',
+        'precision'
+      ];
+      Object.keys(fmeta).forEach(function (attributeName) {
+
+        if (!override && node.hasAttribute(attributeName)) {
+          return;
+        }
+
+        var attributeValue = fmeta[attributeName];
+        if (typeof attributeValue === 'object' ||
+          Array.isArray(attributeValue)) {
+
+          if (attributeName === 'in' || attributeName === 'notin') {
+            //<oe-async-validator fields='["email"]' model={{:modelAlias}} requesturl='/api/Persons?filter={"where":{"email":"{{person.email}}"} }' ensure="absent" error="email must be unique"></oe-async-validator>
+            var validationNode = createNodeForElement('oe-combination-validator');
+            validationNode.setAttribute('fields', '["' + fieldId + '"]');
+            validationNode.setAttribute('model', '{{' + modelAlias + '}}');
+            validationNode.setAttribute('ensure', attributeName === 'in' ? 'present' : 'absent');
+            validationNode.setAttribute('error', fieldId + '-invalid-value');
+            validationNode.setAttribute('combinations', JSON.stringify(attributeValue));
+            parentNode.appendChild(validationNode);
+          } else {
+            node.setAttribute(attributeName, JSON.stringify(attributeValue));
+          }
+        } else if (typeof attributeValue === 'boolean') {
+
+          if (node.hasAttribute('oe-false-' + attributeName)) {
+            return;
+          }
+
+          if (attributeName === 'unique' && parentNode) {
+            //<oe-async-validator fields='["email"]' model={{:modelAlias}} requesturl='/api/Persons?filter={"where":{"email":"{{person.email}}"} }' ensure="absent" error="email must be unique"></oe-async-validator>
+            var validationNode = createNodeForElement('oe-async-validator'); // eslint-disable-line no-redeclare
+            validationNode.setAttribute('fields', '["' + fieldId + '"]');
+            validationNode.setAttribute('model', '{{' + modelAlias + '}}');
+            validationNode.setAttribute('ensure', 'absent');
+            validationNode.setAttribute('error', fieldId + '-not-unique');
+
+            var primaryKey = getPrimaryKey(uimeta);
+            var whereClause = {
+              where: {
+                and: []
+              }
+            };
+
+            var uniqueCondition = {};
+            uniqueCondition[fieldId] = '{{' + modelAlias + '.' + fieldId + '}}';
+
+            var pkCondition = {};
+            pkCondition[primaryKey] = {
+              neq: '{{' + modelAlias + '.' + primaryKey + '}}'
+            };
+
+            whereClause.where.and.push(uniqueCondition);
+            whereClause.where.and.push(pkCondition);
+
+            validationNode.setAttribute('requesturl', uimeta.metadata.resturl + '?filter=' + JSON.stringify(
+              whereClause));
+
+            parentNode.appendChild(validationNode);
+          } else {
+            if (attributeValue) {
+              node.setAttribute(attributeName, attributeValue);
+            } else {
+              node.removeAttribute(attributeName);
+            }
+          }
+        } else if (['uitype', 'type', 'refcodetype', 'enum', 'enumtype', 'evtype'].indexOf(attributeName) === -1) {
+          if (attributeName === 'max' && (['number', 'decimal', 'integer', 'date'].indexOf(fmeta.type) === -1)) {
+            attributeName = 'maxlength';
+          } else if (attributeName === 'min' && (['number', 'decimal', 'integer', 'date'].indexOf(fmeta.type) ===
+              -1)) {
+            attributeName = 'minlength';
+          }
+
+          if (expressionAttributes.indexOf(attributeName) >= 0) {
+            //we may need some #identifier
+            var chunks = attributeValue.match(/{{[@]*[\w+\.]*}}/ig);
+            //extract
+            if (chunks) {
+              var chunkDetails =
+                chunks.filter(function (v, i, a) {
+                  // remove duplicates
+                  return a.indexOf(v) === i;
+                })
+                .map(function (v, i) {
+                  var raw = v;
+                  var bind = v.substr(2, v.length - 4);
+
+                  if (bind[0] !== '@') {
+                    bind = modelAlias + '.' + bind;
+                  } else {
+                    bind = bind.replace('@i.', modelAlias + '.');
+                    //object specified explicitly e.g. {{@vm.salary}}
+                    bind = bind.replace('@', '');
+                  }
+                  var varPath = bind.split('.');
+                  var variable = varPath[varPath.length - 1] + i;
+                  return {
+                    raw: raw,
+                    variable: variable,
+                    bind: bind
+                  };
+                });
+
+              // remove starting and ending curly braces {{...}}
+
+              var bindingExpression = '';
+              if (attributeValue.substr(0, 2) === '[[' && attributeValue.substr(attributeValue.length - 2, 2) ===
+                ']]') {
+
+                //direct function call which is already defined as part of functions{}
+                chunkDetails.forEach(function (v) {
+                  attributeValue = attributeValue.replace(new RegExp(v.raw, 'g'), v.bind);
+                });
+                bindingExpression = attributeValue;
+              } else {
+                var funcName = '_' + fmeta.fieldId + '_' + attributeName;
+                //expression
+                var funcArgs = chunkDetails.map(function (v) {
+                  return v.variable;
+                });
+                var bindArgs = chunkDetails.map(function (v) {
+                  return v.bind;
+                }).join(',');
+                bindingExpression = '[[' + funcName + '(' + bindArgs + ')]]';
+                chunkDetails.forEach(function (v) {
+                  attributeValue = attributeValue.replace(new RegExp(v.raw, 'g'), v.variable);
+                });
+
+                prototype[funcName] = new Function(funcArgs, 'return (' + attributeValue + ');');
+              }
+
+              if (attributeName === 'value') {
+                //for value expressions we add a new property as below
+                // _fieldId_computed_value: {
+                //    computed : '_fieldId_value(....)'  //bindingExpression without {{}}
+                //    observer : '_fieldId_computed_value_observer(newVal,oldVal){vm.fieldId = newVal;};
+                //  }
+
+                var propName = '_' + fmeta.fieldId + '_computed_value';
+                var propConfig = {
+                  computed: funcName + '(' + bindArgs + ')',
+                  observer: propName + '_observer'
+                };
+
+                prototype[propName + '_observer'] = new Function('newVal', 'this.set("' + modelAlias + '.' +
+                  fmeta.fieldId + '",newVal);');
+                prototype.properties = prototype.properties || {};
+                prototype.properties[propName] = propConfig;
+                bindingExpression = '[[' + propName + ']]';
+              }
+
+              attributeValue = bindingExpression;
+            }
+          }
+          if (attributeName === 'textContent') {
+            node.textContent = attributeValue;
+          } else {
+            node.setAttribute(attributeName, attributeValue);
+          }
+        }
+      });
+
+      if (node.nodeName === 'OE-INFO') {
+        node.setAttribute('type', fmeta.type);
+      }
+
+      if (fieldId && !fieldId.startsWith('@')) {
+        if (!node.hasAttribute('field-id')) {
+          node.setAttribute('field-id', fieldId);
+        }
+      }
+      if (fmeta.type === 'documentdata') {
+        if (modelAlias && fieldId && !fieldId.startsWith('@')) {
+          var binding = '{{' + (fmeta.bindto || modelAlias) + '.' + fieldId + '}}';
+          var binding2 = '{{' + (fmeta.bindto || modelAlias) + '.' + fmeta.relationName + '}}';
+          var binding3 = uimeta.metadata.models[uimeta.modelName].resturl;
+          var binding4 = '{{' + (fmeta.bindto || modelAlias) + '.id}}';
+          node.setAttribute('document-id', binding);
+          node.setAttribute('document', binding2);
+          node.setAttribute('document-post-url', binding3);
+          node.setAttribute('document-parent-attribute', modelAlias);
+          node.setAttribute('parent-id', binding4);
+        }
+      }
+
+      if (fmeta.type !== 'grid') {
+
+        /*if (!fmeta.class) {
+        	node.classList.add('evfield');
+        }*/
+
+        if (!node.hasAttribute('value')) {
+          if (modelAlias && fieldId && !fieldId.startsWith('@')) {
+            var binding = '{{' + (fmeta.bindto || modelAlias) + '.' + fieldId + '}}'; // eslint-disable-line no-redeclare
+            node.setAttribute('value', binding);
+          }
+        }
+      } else {
+        if (node.nodeName === 'OE-GRID') {
+          fmeta.columnDefs = [];
+          Object.keys(fmeta.subModelMeta).forEach(function (prop) {
+            var type = window.OEUtils.TypeMappings[fmeta.subModelMeta[prop].type] || 'string';
+            var col = {
+              field: prop,
+              headerName: camelCaseToLabel(prop),
+              uitype: type.uiType
+            };
+            fmeta.columnDefs.push(col);
+          });
+          node.setAttribute('columndefs', JSON.stringify(columnDefs)); // eslint-disable-line no-undef
+          fieldId && node.setAttribute('rowdata', '{{' + (fmeta.bindto || modelAlias) + '.' + fieldId + '}}');
+          node.setAttribute('dialogmetadata', fmeta.modeltype);
+          node.setAttribute('gridIdentifier', fmeta.modeltype);
+        } else {
+
+          var recordHandling = 'local';
+          //node.setAttribute('columns', '[[fields.' + fieldId + '.columns]]');
+          node.setAttribute('model', fmeta.modeltype);
+          fieldId && node.setAttribute('items', '{{' + (fmeta.bindto || modelAlias) + '.' + fieldId + '}}');
+          node.setAttribute('editor-form-url', '/api/UIComponents/component/' + fmeta.modeltype.toLowerCase() +
+            '-form.html');
+          node.setAttribute('record-handling', recordHandling);
+        }
+      }
+
+      if (fmeta.textContent) {
+        node.textContent = fmeta.textContent;
+      }
+    }
+
+    // uimeta contains
+    //
+    //   metadata (modelMeta)
+    //   fields    (prioirty fields)
+    //   content   (html)
+    //   autoInjectFields
+    //         whether fields from meta
+    //         should be injected in html or not
+    //   excludeFields
+    //        fields from modelMeta
+    //        which are not to be injected
+    //   elements
+    //        personalized elements
+    //
+    // Steps involved are
+    // 1. Enrich metadata received from server
+    // 2. Form controlsByField which stores mapping of filed-ids to controls
+    // 3. from content (if-any) get injector container
+    //    injector main concontainer is set to container having id as fields
+    //    if container with id=fields is not present then template itself is taken as inect container.
+    // 4. oe-fields is expanded to create controls for each field
+    // 5. if uimeta has fields
+    //    then for each field a control is created if not present
+    // 6. if autoInjectFields is set then all remaining fields
+    //    from modelMeta are injected
+    //  finally attributes on personalized elements are set
+
+    var controlsByField = {};
+
+    function findFieldMeta(fieldId, modelMeta, uimeta) {
+      var fmeta;
+
+      if (fieldId && fieldId.indexOf('.') >= 0) {
+        var path = fieldId.split('.');
+        fmeta = modelMeta[path[0]] || {};
+        if ((fmeta.type === 'array' && fmeta.itemtype === 'model') || (fmeta.type === 'model')) {
+          modelMeta = uimeta.metadata.models[fmeta.modeltype];
+          modelMeta = modelMeta && modelMeta.properties ? modelMeta.properties : {};
+          path.shift();
+          fieldId = path.join('.');
+          fmeta = findFieldMeta(fieldId, modelMeta, uimeta);
+          fmeta.label = fmeta.label || camelCaseToLabel(fieldId);
+        }
+      } else {
+        if (fieldId && modelMeta) {
+          fmeta = modelMeta[fieldId];
+          if (!fmeta) {
+            fmeta = {};
+            modelMeta[fieldId] = fmeta;
+          }
+          
+          if (fmeta.enumtype || fmeta.refcodetype) {
+            fmeta.type = 'combo';
+            fmeta.displayproperty = 'description';
+            fmeta.valueproperty = 'code';
+            if(uimeta.metadata.models[fmeta.enumtype || fmeta.refcodetype]){
+              fmeta.listurl = uimeta.metadata.models[fmeta.enumtype || fmeta.refcodetype].resturl;
+            }
+          } else if (fmeta.in) {
+            fmeta.type = 'combo';
+            fmeta.listdata = fmeta.in;
+          } else if (fmeta.type === 'array') {
+            if (fmeta.itemtype === 'model' && fmeta.modeltype) {
+              fmeta.type = 'grid';
+              if (uimeta.metadata.models[fmeta.modeltype]) {
+                fmeta.subModelMeta = uimeta.metadata.models[fmeta.modeltype].properties;
+              }
+            } else {
+              fmeta.type = 'tags';
+            }
+          }
+        } else {
+          fmeta = {};
+        }
+      }
+      return fmeta;
+    }
+
+    /**
+     * Sets specified `value` on `target` going levels down if required.
+     * o:{},
+     *  setValue(o, "x",5) -> o:{x:5}
+     *      setValue(o, "y.z",6) -> o:{x:5,y:{z:6}}
+     *      setValue(o, "y.k",7) -> o:{x:5,y:{z:6,k:7}}
+     */
+    function setValue(target, field, value) {
+      if (field) {
+        var fields = field.split('.');
+        var leaf = fields.pop();
+
+        var currentTarget = target;
+        fields.forEach(function _forEachCb(field) {
+          currentTarget[field] = currentTarget[field] || {};
+          currentTarget = currentTarget[field];
+        });
+
+        if (value !== undefined) {
+          currentTarget[leaf] = value;
+        }
+      }
+    }
+
+    function mixmeta(uimeta) {
+      var defaultVM = {};
+      var personalizedVM = {};
+      uimeta.modelAlias = prototype.modelAlias || uimeta.modelAlias;
+      uimeta.metadata = uimeta.metadata || {};
+      var modelMeta = uimeta.metadata.properties || {};
+      Object.keys(modelMeta).forEach(function (fieldId) {
+        var fmeta = modelMeta[fieldId] || {};
+        fmeta.label = fmeta.label || camelCaseToLabel(fieldId);
+        setValue(defaultVM, fieldId, (fmeta.type === 'boolean' && fmeta.default === undefined ? false : fmeta.default));
+      });
+
+      // field id in elements can be string -> fieldid
+      // @something, something css selector
+      if (uimeta.elements) {
+        Object.keys(uimeta.elements).forEach(function (fieldId) {
+          if (!fieldId.startsWith('@')) {
+            var fmeta = findFieldMeta(fieldId, modelMeta, uimeta);
+            var el = uimeta.elements[fieldId];
+            fmeta.uitype = el.uitype;
+            fmeta.container = el.container;
+            fmeta.order = el.order;
+            fmeta.default = el.default !== undefined ? el.default : fmeta.default;
+            setValue(personalizedVM, fieldId, fmeta.default);
+          }
+        });
+      }
+
+      if (templateCont) {
+        // transfer uimeta.content to dom template
+        var defaultInject = templateCont.deepQuery('#fields') || templateCont;
+        if (uimeta.content) {
+          var tpl = document.createElement('template');
+          tpl.innerHTML = uimeta.content;
+          while (tpl.content.children.length > 0) {
+            var node = tpl.content.children[0];
+            var containerName = node.getAttribute('oe-container');
+            var parent = null;
+            if (containerName) {
+              if (templateCont.getElementById) {
+                parent = templateCont.getElementById(containerName);
+              } else {
+                parent = templateCont.deepQuery('#' + containerName);
+              }
+              if (!parent) {
+                parent = document.createElement('div');
+                parent.setAttribute('id', containerName);
+                templateCont.appendChild(parent);
+              }
+            } else {
+              if(node.hasAttribute('field-id')){
+                parent = defaultInject;
+              }else{
+                parent = templateCont;
+              }
+            }
+            parent.appendChild(node);
+          }
+        }
+      }
+
+      /*
+       querySelectAll and collect all the fields that are pre-defined in the template.
+       controlsByField is later used to identify if field has to be auto-injected or not.
+       */
+      /* TODO we should not replace attributes already present*/
+
+      function walk(parent, node, query, results) {
+        var nodes = node.querySelectorAll(query);
+        var parentFieldId;
+        if (parent.hasAttribute('field-id')) {
+          parentFieldId = parent.getAttribute('field-id');
+        }
+
+        for (var j = 0; j < nodes.length; j++) {
+          if (parentFieldId) {
+            nodes[j].setAttribute('parent-field-id', parentFieldId);
+          }
+          var metaId = nodes[j].getAttribute('field-id');
+          if (parentFieldId) {
+            var fullFieldId = parentFieldId + '.{{index}}.' + metaId;
+            nodes[j].setAttribute('field-id', fullFieldId);
+            var itemName = 'item';
+            if (parent.hasAttribute('as')) {
+              itemName = parent.getAttribute('as');
+            }
+            var binding = '{{' + itemName + '.' + metaId + '}}';
+            nodes[j].setAttribute('value', binding);
+            metaId = parentFieldId + '.' + metaId;
+          }
+          nodes[j].setAttribute('meta-field-id', metaId);
+          results.push(nodes[j]);
+        }
+        var templates = node.querySelectorAll('template');
+        for (var i = 0; i < templates.length; i++) {
+          // Children are siblings to each other
+          //console.log('template ', templates[i]);
+          var template = templates[i];
+          // dom-repeat check to fix 2 issues.
+          // Issue 1.
+          // There is case when a model has a dom-repeat of submodel so field is not getting injected for parent model
+          // Issue 2.
+          //  attributes on sub model in dom repeat is getting set from parent model meta.
+          if (template.is && template.is === 'dom-repeat') { // eslint-disable-line no-empty
+          } else {
+            walk(template, templates[i].content, query, results);
+          }
+        }
+      }
+      if (templateCont) {
+        var queryFields = [];
+        walk(template, templateCont, '[field-id]', queryFields);
+
+        for (var i = 0; i < queryFields.length; ++i) {
+          var e = queryFields[i];
+          var fieldId = e.getAttribute('meta-field-id') || e.getAttribute('field-id');
+          var fmeta = findFieldMeta(fieldId, modelMeta, uimeta);
+          if (e.nodeName === 'OE-FIELD') {
+            var node = createMergedNode(fmeta, e); // eslint-disable-line no-redeclare
+            setAttributesOnNode(node, fieldId, fmeta, uimeta, e.parentNode, false);
+            if (e.parentNode) {
+              e.parentNode.replaceChild(node, e);
+            }
+            e = node;
+          } else {
+            var typeMap = window.OEUtils.TypeMappings[fmeta.type] || {};
+            setMissingAttributes(e, typeMap.attributes);
+            setAttributesOnNode(e, fieldId, fmeta, uimeta, e.parentNode, false);
+          }
+          controlsByField[fieldId] = controlsByField[fieldId] || [];
+          controlsByField[fieldId].push(e);
+        }
+
+        //            for (i = 0; i < evfields.length; ++i) {
+        //                var e = evfields[i];
+        //                var node = createNodeForElement(fmeta.uitype);
+        //                    if (!node) {
+        //                        console.log('node is null ', fmeta);
+        //                    } else {
+        //                        setAttributesOnNode(node, fieldId, fmeta, uimeta, defaultInject);
+        //                        defaultInject.appendChild(node);
+        //                        controlsByField[fieldId] = controlsByField[fieldId] || [];
+        //                        controlsByField[fieldId].push(node);
+        //                    }
+        //            };
+        /*
+        Select oe-fields tags with list attribute and generate element for each field.
+        <oe-fields list="firstName,lastName"></oe-fields>
+        is translated into two elements one each for firstName and lastName
+        */
+        var fldcontainers = templateCont.querySelectorAll('oe-fields[list]');
+        for (i = 0; i < fldcontainers.length; ++i) {
+          var e = fldcontainers[i]; // eslint-disable-line no-redeclare
+          var list = e.getAttribute('list');
+          list = list.split(',');
+          list.forEach(function (fieldId) { // eslint-disable-line no-loop-func
+            var fmeta = findFieldMeta(fieldId, modelMeta, uimeta);
+            var node = createNodeForMetaDefn(fmeta);
+            if (!node) {
+              //console.log('node is null ', fmeta);
+            } else {
+              setAttributesOnNode(node, fieldId, fmeta, uimeta, defaultInject, false);
+              var cont;
+              if (fmeta.container) {
+                cont = defaultInject.deepQuery('#' + fmeta.container);
+                if (!cont) {
+                  cont = defaultInject.deepQuery(fmeta.container);
+                }
+              }
+              if (cont) {
+                cont.appendChild(node);
+              } else {
+                e.parentNode.insertBefore(node, e);
+              }
+              controlsByField[fieldId] = controlsByField[fieldId] || [];
+              controlsByField[fieldId].push(node);
+            }
+          });
+          e.parentNode.removeChild(e);
+        }
+      }
+
+      var excludeFields = uimeta.excludeFields || [];
+      if (!Array.isArray(excludeFields)) {
+        excludeFields = [];
+      }
+
+      if (uimeta.fields && Array.isArray(uimeta.fields)) {
+        uimeta.fields.forEach(function (fmeta) {
+
+          if (typeof fmeta === 'string') {
+            fmeta = {
+              fieldId: fmeta
+            };
+          } 
+          
+          //is it?? ok to override modelMeta object with fields attributes
+          var mmeta = findFieldMeta(fmeta.fieldId, modelMeta, uimeta);
+          fmeta = Object.assign(mmeta, fmeta);
+          setValue(defaultVM, fieldId, fmeta.default);
+          
+          var fieldId = fmeta.fieldId;
+
+          if (fieldId && excludeFields.indexOf(fieldId) !== -1) {
+            return;
+          }
+
+          var nodes = controlsByField[fieldId];
+          if (!nodes || nodes.length === 0) {
+            var node = createNodeForMetaDefn(fmeta);
+            if (!node) {
+              //console.log('node is null');
+            } else {
+              var container;
+              if (fmeta.container) {
+                if (templateCont.getElementById) {
+                  container = templateCont.getElementById(fmeta.container);
+                } else {
+                  container = templateCont.deepQuery('#' + fmeta.container);
+                }
+                if (!container) {
+                  container = document.createElement('div');
+                  container.setAttribute('id', fmeta.container);
+                  templateCont.appendChild(container);
+                }
+              } else {
+                container = defaultInject;
+              }
+              container.appendChild(node);
+              controlsByField[fieldId] = controlsByField[fieldId] || [];
+              if (fieldId) {
+                controlsByField[fieldId].push(node);
+                nodes = controlsByField[fieldId];
+              } else {
+                //create temporary array for setting attributes.
+                nodes = [node];
+              }
+            }
+          }
+          nodes && nodes.forEach(function (node) {
+            setAttributesOnNode(node, fieldId, fmeta, uimeta, defaultInject, false);
+          });
+        });
+      }
+
+      if (uimeta.autoInjectFields) {
+        var sortedMeta = Object.keys(modelMeta).sort(function (l, r) {
+          var lmeta = modelMeta[l];
+          var rmeta = modelMeta[r];
+          if (lmeta.order && rmeta.order) {
+            if (lmeta.order < rmeta.order) {
+              return -1;
+            }
+            if (lmeta.order < rmeta.order) {
+              return 1;
+            }
+            return 0;
+          } else if (lmeta.order) {
+            return -1;
+          } else if (rmeta.order) {
+            return 1;
+          }
+          return 0;
+        });
+
+        sortedMeta.forEach(function (fieldId) {
+          if (excludeFields.indexOf(fieldId) !== -1) {
+            return;
+          }
+          var fmeta = modelMeta[fieldId] || {};
+          if (fmeta.deprecated) {
+            return;
+          }
+
+          if(fmeta.type === 'model'){
+            setValue(defaultVM, fieldId, _getModelDefaultVM(fmeta.modeltype, uimeta.metadata.models));            
+          } else {
+            setValue(defaultVM, fieldId, (fmeta.type === 'boolean' && fmeta.default === undefined ? false : fmeta.default));
+          }
+
+          if (controlsByField[fieldId]) {
+            return;
+          }
+
+          var nodesForField = [];
+          if(fmeta.type === 'model' && !fmeta.uitype) {
+            //render a composite field as multiple controls
+            var subModelMeta = uimeta.metadata.models[fmeta.modeltype];
+            subModelMeta = subModelMeta && subModelMeta.properties ? subModelMeta.properties : {};
+            
+            for(var subField in subModelMeta) {
+              var subFieldMeta = findFieldMeta(subField, subModelMeta, uimeta);
+              subFieldMeta.label = subFieldMeta.label || camelCaseToLabel(subField);
+              
+              if(!subFieldMeta.uitype) {
+                if(subFieldMeta.in) {
+                  subFieldMeta.type = 'combo';
+                  subFieldMeta.listdata = subFieldMeta.in;                  
+                } else if(subFieldMeta.enumtype || subFieldMeta.refcodetype) {
+                  subFieldMeta.type = 'combo';
+                  subFieldMeta.displayproperty = 'description';
+                  subFieldMeta.valueproperty = 'code';
+                  var relatedModel = uimeta.metadata.models[subFieldMeta.enumtype || subFieldMeta.refcodetype];
+                  subFieldMeta.listurl = relatedModel?relatedModel.resturl:undefined;
+                } else if(subFieldMeta.type === 'array') {
+                  if (subFieldMeta.itemtype === 'model') {
+                    subFieldMeta.type = 'grid';
+                    subFieldMeta.subModelMeta = uimeta.metadata.models[subFieldMeta.modeltype].properties;
+                  } else {
+                    subFieldMeta.type = 'tags';
+                  }
+                }
+              }
+
+              var compositeFieldId = fieldId+'.'+subField;
+              if(controlsByField[compositeFieldId] && controlsByField[compositeFieldId].length>0){
+                //composite field was already defined as part of fields and control is already available
+                
+              } else {
+                var node = createNodeForMetaDefn(subFieldMeta);
+                if(node) {
+                  nodesForField.push({fieldId: compositeFieldId, node: node, fieldMeta: subFieldMeta});
+                }                
+              }
+            }
+          } else {
+            var node = createNodeForMetaDefn(fmeta);
+            if(node) {
+              nodesForField.push({fieldId: fieldId, node: node, fieldMeta: fmeta});
+            }
+          }
+
+          nodesForField.forEach(function(item){
+            var container;
+            setAttributesOnNode(item.node, item.fieldId, item.fieldMeta, uimeta, defaultInject, false);
+            if (item.fieldMeta.container) {
+              if (templateCont.getElementById) {
+                container = templateCont.getElementById(item.fieldMeta.container);
+              } else {
+                container = templateCont.deepQuery('#' + item.fieldMeta.container);
+              }
+              container = container || defaultInject;
+              // if fmeta.container not defined and node type is oe-DATA-TABLE then the grid should render in grids container of default form
+            } else if (item.node.nodeName === 'OE-DATA-TABLE') {
+              if (templateCont.getElementById) {
+                container = templateCont.getElementById('grids');
+              } else {
+                container = templateCont.deepQuery('#grids');
+              }
+              container = container || defaultInject;
+            } else {
+              container = defaultInject;
+            }
+            container.appendChild(item.node);
+            controlsByField[item.fieldId] = controlsByField[item.fieldId] || [];
+            controlsByField[item.fieldId].push(item.node);
+          });
+        });
+      }
+
+      var oeValidations = uimeta.oeValidations || [];
+      //append validations
+      for (i in oeValidations) {
+        var validation = oeValidations[i];
+
+        var validationElement = createNodeForElement(validation.type);
+
+        validationElement.setAttribute('model', '{{' + uimeta.modelAlias + '}}');
+        validationElement.setAttribute('fields', JSON.stringify(validation.fields));
+        if (validation.error) {
+          validationElement.setAttribute('error', validation.error);
+        }
+        if (validation.expression) {
+          //oe-expression-validator
+          validationElement.setAttribute('expression', validation.expression);
+        }
+        if (validation.combinations) {
+          //oe-combination-validator
+          validationElement.setAttribute('combinations', JSON.stringify(validation.combinations));
+        }
+        if (validation.requesturl) {
+          //oe-async-validator
+          validationElement.setAttribute('requesturl', validation.requesturl);
+        }
+        templateCont.appendChild(validationElement);
+      }
+      uimeta.defaultVM = Object.assign(defaultVM, personalizedVM);
+    }
+
+    function setAttributesOnElements(uimeta) {
+      Object.keys(uimeta.elements).forEach(function (fieldId) {
+        var elementData = uimeta.elements[fieldId];
+        var controls = controlsByField[fieldId];
+        if (!controls) {
+          var query = fieldId.startsWith('@') ? fieldId.substr(1, fieldId.length) : '' + fieldId;
+          controls = templateCont.querySelectorAll(query);
+        }
+        for (var i = 0; i < controls.length; i++) {
+          setAttributesOnNode(controls[i], fieldId, elementData, uimeta, null, true);
+        }
+      });
+    }
+
+    mixmeta(uimeta);
+
+    if (uimeta.elements) {
+      setAttributesOnElements(uimeta);
+    }
+  };
+
+  window.MetaPolymer = function (prototype) {
+    var domModule = (document._currentScript || document.currentScript).ownerDocument.querySelector('dom-module#' +
+      prototype.is);
+    var template;
+    if (domModule) {
+      template = domModule.querySelector('template');
+    }
+
+    prototype.properties = prototype.properties || {};
+    var metaKey = prototype.is;
+    var uimeta;
+
+    function regiterWithPolymer() {
+      prototype.behaviors = prototype.behaviors || [];
+      prototype.behaviors.push(OEUtils.MetaBehavior);
+      prototype.behaviors.push(OEUtils.UtilsBehavior);
+
+      if (prototype.behaviors.indexOf(OEUtils.FormValidationBehavior) >= 0) {
+        prototype.observers = prototype.observers || [];
+        prototype.observers.push('_clearAllErrors(' + uimeta.modelAlias + ')');
+      }
+
+      prototype.properties[uimeta.modelAlias] = prototype.properties[uimeta.modelAlias] || {
+        type: Object,
+        notify: true
+      };
+
+      prototype.properties[uimeta.modelAlias].value = prototype.properties[uimeta.modelAlias].value || function () {
+        return JSON.parse(JSON.stringify(uimeta.defaultVM));
+      };
+
+      if (uimeta.polymerConfig) {
+        for (var i in uimeta.polymerConfig.behaviors) {
+          prototype.behaviors.push(OEUtils.deepValue(window, uimeta.polymerConfig.behaviors[i]));
+        }
+
+        for (var funcName in uimeta.polymerConfig.functions) {
+          prototype[funcName] = OEUtils.createFunction(uimeta.polymerConfig.functions[funcName]);
+        }
+
+        for (var propName in uimeta.polymerConfig.properties) {
+          prototype.properties = prototype.properties || {};
+          prototype.properties[propName] = uimeta.polymerConfig.properties[propName];
+        }
+        for (var eventName in uimeta.polymerConfig.listeners) {
+          prototype.listeners = prototype.listeners || {};
+          prototype.listeners[eventName] = uimeta.polymerConfig.listeners[eventName];
+        }
+      }
+
+      Polymer(prototype);
+    }
+
+    var xhttp = new XMLHttpRequest();
+    xhttp.onreadystatechange = function () {
+      if (xhttp.readyState === 4 && xhttp.status === 200) {
+        uimeta = JSON.parse(xhttp.responseText);
+        OEUtils.metadataCache[metaKey] = uimeta;
+        populateModelDefCache(uimeta);
+        OEUtils.Metamorph(template, uimeta, prototype);
+        regiterWithPolymer();
+      }
+    };
+
+    prototype.properties.meta = {
+      type: 'object'
+    };
+
+    // Populate modelDefCache
+    function populateModelDefCache(uimeta) {
+      if (uimeta.metadata && uimeta.metadata.models) {
+        var models = uimeta.metadata.models;
+        Object.keys(models).forEach(function (modelName) {
+          if (!OEUtils.modelDefCache[modelName]) {
+            OEUtils.modelDefCache[modelName] = models[modelName];
+          }
+        });
+      }
+    }
+
+    if (!OEUtils.metadataCache[metaKey]) {
+      var url = '/api/UIComponents/modelmeta/' + metaKey;
+      url = OEUtils.geturl(url);
+      xhttp.open('GET', url, true);
+      xhttp.setRequestHeader('Content-Type', 'application/json;charset=encoding');
+      //console.log('MetaPolymer sending req formetadata.json');
+      xhttp.send();
+    } else {
+      uimeta = OEUtils.metadataCache[metaKey];
+      populateModelDefCache(uimeta);
+      //console.log('uimeta ', prototype.is, uimeta);
+
+      OEUtils.Metamorph(template, uimeta, prototype);
+      regiterWithPolymer();
+    }
+
+  };
+
+</script>

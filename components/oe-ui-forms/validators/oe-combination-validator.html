@@ -1,0 +1,163 @@
+<!--
+  ©2016-2017 EdgeVerve Systems Limited (a fully owned Infosys subsidiary),
+  Bangalore, India. All Rights Reserved.
+-->
+<link rel="import" href="../../polymer/polymer.html">
+
+<!--
+`oe-combination-validator` evaluates fields on the bound `model` and ensures the combination is one of the defined `combinations`.
+-->
+
+<script>
+  Polymer({
+    is: 'oe-combination-validator',
+    hostAttributes: {
+      'hidden': true
+    },
+
+    /**
+     * Fired when validator is attached
+     *
+     * @event register-validator
+     */
+
+    /**
+     * Fired when validation fails
+     *
+     * @event oe-validator-error
+     */
+
+    /**
+     * Fired when validation succeeds
+     *
+     * @event oe-validator-ok
+     */
+
+    properties: {
+
+      /**
+       * fields that would participate in validation
+       */
+      fields: {
+        type: Array
+      },
+
+      /**
+       * Model on which expression will be evaluated
+       */
+      model: {
+        type: Object
+      },
+
+      /**
+       * array of valid combinations.
+       */
+      combinations: {
+        type: Array,
+        value: function () {
+          return [];
+        }
+      },
+
+      /**
+       *
+       */
+      ensure: {
+        type: String,
+        value: 'present'
+      },
+
+      /**
+       * error message/code to raise when validation fails
+       */
+      error: {
+        type: String,
+        value: 'Invalid Combination'
+      }
+    },
+    attached: function () {
+      this.fire('register-validator', this.fields);
+    },
+    _deepValue: function (obj, path) {
+      for (var i = 0, path = path.split('.'), len = path.length; obj && i < len; i++) { // eslint-disable-line no-redeclare
+        obj = obj[path[i]];
+      }
+      return obj;
+    },
+
+    /**
+     * Checks if two javascript objects are equivalent. Only top level properties are checked for equivalence.
+     */
+    isEquivalent: function (a, b) {
+      // Create arrays of property names
+      var aProps = Object.getOwnPropertyNames(a);
+      var bProps = Object.getOwnPropertyNames(b);
+
+      // If number of properties is different,
+      // objects are not equivalent
+      if (aProps.length != bProps.length) {
+        return false;
+      }
+
+      for (var i = 0; i < aProps.length; i++) {
+        var propName = aProps[i];
+
+        // If values of same property are not equal,
+        // objects are not equivalent
+        if (this._deepValue(a, propName) !== this._deepValue(b, propName)) {
+          return false;
+        }
+      }
+
+      // If we made it this far, objects
+      // are considered equivalent
+      return true;
+    },
+
+    /**
+     * Performs validation and triggers appropriate validation event.
+     */
+    validate: function () {
+
+      var refObject = {};
+
+      var valid = false;
+      if (this.fields && this.combinations) {
+
+        if (this.fields.length == 1) {
+          var value = this.model[this.fields[0]];
+          valid = (this.combinations.indexOf(value) >= 0);
+        } else {
+          for (var idx in this.fields) {
+            var field = this.fields[idx];
+            value = this.model[field];
+            refObject[field] = value;
+          }
+
+
+          valid = false;
+          for (idx in this.combinations) {
+            if (this.isEquivalent(refObject, this.combinations[idx])) {
+              valid = true;
+              break;
+            }
+          }
+        }
+      } else {
+        valid = true;
+      }
+
+      valid = this.ensure === 'absent' ? !valid : valid;
+      if (!valid) {
+        this.fire('oe-validator-error', this.error);
+      } else {
+        this.fire('oe-validator-ok');
+      }
+      return Promise.resolve({
+        valid: valid,
+        message: this.error
+      });
+    }
+  });
+
+</script>

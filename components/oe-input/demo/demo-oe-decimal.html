@@ -1,0 +1,84 @@
+<!-- 
+  ©2016-2017 EdgeVerve Systems Limited (a fully owned Infosys subsidiary),
+  Bangalore, India. All Rights Reserved.
+-->
+<!doctype html>
+<html>
+
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+  <meta name="viewport" content="width=device-width, minimum-scale=1.0, initial-scale=1, user-scalable=yes">
+
+  <title>oe-ui demo</title>
+
+  <script src="../../webcomponentsjs/webcomponents-lite.js"></script>
+
+  <link rel="import" href="../../iron-demo-helpers/demo-pages-shared-styles.html">
+  <link rel="import" href="../../iron-demo-helpers/demo-snippet.html">
+  <link rel="import" href="../../paper-styles/paper-styles.html">
+  <link rel="import" href="custom-styles.html">
+  <link rel="import" href="utils.html">
+  <link rel="import" href="../oe-decimal.html">
+
+</head>
+
+<body unresolved>
+
+  <div class="vertical-section-container centered">
+    <h3>Decimal Inputs can have default precision, be disabled, and can skip number-groupings</h3>
+    <demo-snippet>
+      <template>
+        <oe-decimal label="decimal input"></oe-decimal>
+        <oe-decimal label="disabled input" disabled></oe-decimal>
+        <oe-decimal label="input without number groupings" no-grouping></oe-decimal>
+        <oe-decimal label="input precision=2" precision=2 value=50000></oe-decimal>
+        <oe-decimal label="input precision=2 without number groupings " no-grouping precision=2 value=50000></oe-decimal>
+      </template>
+    </demo-snippet>
+
+    <h3>Decimals can handle percentage inputs</h3>
+    <demo-snippet>
+      <template>
+        <template is="dom-bind">
+          <label>[[value]]</label>
+          <oe-decimal percentage value={{value}} label="percentage input"></oe-decimal>
+          <oe-decimal percentage value={{value}} label="disabled % input" disabled></oe-decimal>
+          <oe-decimal percentage value={{value}} label="% input precision=2" precision=2 value=50000></oe-decimal>
+        </template>
+      </template>
+    </demo-snippet>
+
+    <h3>Validations</h3>
+    <demo-snippet>
+      <template>
+        <oe-decimal label="this input requires some number" required></oe-decimal>
+        <oe-decimal field-id="amount" label="this input requires some number <= 50" required max="50"></oe-decimal>
+        <oe-decimal label="this input requires some number >= 5" required min="5"></oe-decimal>
+        <oe-decimal label="this input requires some number between 100 and 500" required max="500" min="100"></oe-decimal>
+      </template>
+    </demo-snippet>
+
+    <h3>Precision</h3>
+    <demo-snippet>
+      <template>
+        <oe-decimal label="input default precision is 6"></oe-decimal>
+        <oe-decimal label="input precision 2" precision=2></oe-decimal>
+        <oe-decimal label="input integer value (precision=0)" precision=0></oe-decimal>
+      </template>
+    </demo-snippet>
+
+    <h3>Externally set value</h3>
+    <demo-snippet>
+      <template>
+        <oe-decimal id="evdec" value=23456 precision=2 label="click button to increment value"></oe-decimal>
+        <button onclick="decIncrementValue()">+100</button>
+        <button onclick="decSetText()">text</button>
+      </template>
+    </demo-snippet>
+
+  </div>
+
+</body>
+
+</html>

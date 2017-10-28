@@ -1,0 +1,87 @@
+<!-- 
+  ©2016-2017 EdgeVerve Systems Limited (a fully owned Infosys subsidiary),
+  Bangalore, India. All Rights Reserved.
+-->
+<link rel="import" href="../polymer/polymer.html">
+<link rel="import" href="../paper-styles/color.html">
+<link rel="import" href="../paper-styles/typography.html">
+<link rel="import" href="../paper-input/paper-input-addon-behavior.html">
+<link rel="import" href="../oe-i18n-msg/oe-i18n-msg.html">
+<!--
+### oe-input-error
+`<oe-input-error>` is an error message for use with `<paper-input-container>`. The error is
+displayed when the `<paper-input-container>` is `invalid`.
+
+    <paper-input-container>
+      <input is="iron-input" pattern="[0-9]*">
+      <oe-input-error>Only numbers are allowed!</oe-input-error>
+    </paper-input-container>
+
+It is a slight variant of `paper-input-error` in the sense that error-message being displayed is translated using `i18n-msg`.
+### Styling
+
+The following custom properties and mixins are available for styling:
+
+Custom property | Description | Default
+----------------|-------------|----------
+`--paper-input-container-invalid-color` | The foreground color of the error | `--google-red-500`
+`--paper-input-error`                   | Mixin applied to the error        | `{}`
+-->
+
+<dom-module id="oe-input-error">
+  <template>
+    <style>
+      :host {
+        display: inline-block;
+        visibility: hidden;
+        color: var(--paper-input-container-invalid-color, --google-red-500);
+        position: absolute;
+        left: 0;
+        right: 0;
+
+        @apply(--paper-font-caption);
+        @apply(--paper-input-error);
+      }
+
+      :host([invalid]) {
+        visibility: visible;
+      }
+
+    </style>
+
+    <span>
+      <oe-i18n-msg msgid={{errorMessage}} placeholders={{placeholders}}>{{errorMessage}}</oe-i18n-msg>
+    </span>
+  </template>
+</dom-module>
+
+<script>
+  Polymer({
+    is: 'oe-input-error',
+
+    behaviors: [
+      Polymer.PaperInputAddonBehavior
+    ],
+
+    properties: {
+
+      /**
+       * True if the error is showing.
+       */
+      invalid: {
+        reflectToAttribute: true,
+        type: Boolean
+      },
+
+      /* i18n placeholders for the error */
+      placeholders: {
+        type: Array
+      },
+
+      errorMessage: {
+        type: String
+      }
+    }
+  });
+
+</script>

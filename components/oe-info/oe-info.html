@@ -1,0 +1,238 @@
+<!--
+  ©2016-2017 EdgeVerve Systems Limited (a fully owned Infosys subsidiary),
+  Bangalore, India. All Rights Reserved.
+-->
+<link rel="import" href="../polymer/polymer.html">
+<link rel="import" href="../iron-flex-layout/iron-flex-layout.html">
+<link rel="import" href="../oe-i18n-msg/oe-i18n-msg.html">
+<link rel="import" href="../oe-field-behavior/oe-field-behavior.html">
+<link rel="import" href="../oe-data-mask-behavior/oe-data-mask-behavior.html">
+<script src="../oe-utils/date-utils.js"></script>
+
+<!--
+### oe-info
+
+	`<oe-info>` is used to display formatted values of numeric, string and date type.
+
+### Styling
+
+	`<oe-info>` provides the following custom properties and mixins for styling:
+
+Custom property | Description | Default
+----------------|-------------|----------
+`--oe-info-label` | Mixin applied to label section | {}
+`--oe-info-value` | Mixin applied to value section | {}
+
+@demo demo/demo-oe-info.html
+-->
+
+<dom-module id="oe-info">
+  <style>
+    #label,
+    #info {
+      padding: 2px 0;
+    }
+
+    .vertical {
+      @apply(--layout-vertical);
+    }
+
+    .horizontal {
+      @apply(--layout-horizontal);
+    }
+
+    .horizontal > #label {
+      padding-right: 10px;
+    }
+
+    #label {
+      font-size: 12px;
+      color: var(--secondary-text-color);
+
+      @apply(--oe-info-label);
+    }
+
+    #info {
+      font-size: 15px;
+
+      @apply(--oe-info-value);
+    }
+
+  </style>
+
+  <template>
+    <div class$="[[layout]]">
+      <div id="label">
+        <oe-i18n-msg msgid=[[label]]>[[label]]</oe-i18n-msg>
+      </div>
+      <div id="info" aria-labelledby="label">
+        <template is="dom-if" if={{!_needI18n(type)}}>
+          [[display]]
+        </template>
+        <template is="dom-if" if={{_needI18n(type)}}>
+          <oe-i18n-msg msgid=[[display]]>[[display]]</oe-i18n-msg>
+        </template>
+        <!-- dummy span to ensure div with empty value occupies the space -->
+        <span class="required" hidden$="[[display]]">&nbsp;</span>
+      </div>
+    </div>
+  </template>
+
+</dom-module>
+
+<script src="../moment/moment.js"></script>
+<script>
+  Polymer({
+    is: 'oe-info',
+    behaviors: [
+      OEUtils.FieldBehavior,
+      OEUtils.DataMaskBehavior
+    ],
+    properties: {
+
+      /**
+       * label
+       */
+      label: {
+        type: String
+      },
+
+      /**
+       * value to format and display
+       */
+      value: {
+        type: Object,
+        observer: '_refresh'
+      },
+
+      /**
+       * formatted display value
+       */
+      display: {
+        type: String,
+        notify: true
+      },
+
+      /**
+       * `type` controls how the `value` is formatted
+       * * `double|number|decimal` : `value` is converted to locale string based on given `precision`
+       * * `date`: if `format` is specified, value is formatted using momentjs. If `format is not provided, toLocaleDateString function is used for formatting.
+       * * `boolean`: `true` is formatted as 'Yes' and `false` is formatted as 'No'. You can use Literal i18n translations to customize the value.
+       * * `*` : For everything else, no formatting is applied.
+       */
+      type: {
+        type: String,
+        value: 'text',
+        observer: '_refresh'
+      },
+
+      /**
+       * Decimal display precision for `type` : [number, double , decimal]
+       */
+      precision: {
+        type: Number,
+        value: 2,
+        observer: '_refresh'
+      },
+      format: {
+        type: String,
+        observer: '_refresh'
+      },
+
+      /**
+       * Controls the relative positions of `label` and `value`.
+       * * vertical : label is displayed above the value (much like oe-input)
+       * * horizontal : label is displayed on left and value on right
+       */
+      layout: {
+        type: String,
+        value: 'vertical'
+      }
+    },
+
+    /**
+     * For boolean values, we need i18n so that Yes/No etc. can be translated appropriately.
+     */
+    _needI18n: function (type) {
+      return type == 'boolean';
+    },
+
+    /**
+     * Refresh the display due to either value or some configuration attribute change.
+     */
+    _refresh: function () {
+
+      var nval = this.value;
+      var newDisplay = '';
+
+      var type = this.type || 'text';
+      switch (type) {
+        case 'date':
+          {
+            newDisplay = '';
+            if (nval) {
+              if (this.format && this.format != 'date' && typeof moment !== 'undefined') {
+                newDisplay = moment.utc(nval).format(this.format);
+              } else {
+                newDisplay = OEUtils.DateUtils.utcDateFormatter.format(new Date(nval));
+              }
+            }
+            break;
+          }
+        case 'timestamp':
+          {
+            newDisplay = '';
+            if (nval) {
+              var dateFormat = this.format || ((OEUtils.TypeMappings && OEUtils.TypeMappings.date) ?
+                OEUtils.TypeMappings.date.format :
+                undefined);
+              if (dateFormat && dateFormat !== 'date' && typeof moment !== 'undefined') {
+                newDisplay = moment(nval).format(dateFormat);
+              } else {
+                newDisplay = (new Date(nval)).toLocaleString();
+              }
+            }
+            break;
+          }
+        case 'integer':
+          {
+
+            newDisplay = (nval !== undefined || nval !== null) ? Number(nval).toLocaleString(undefined, {
+              minimumFractionDigits: 0,
+              maximumFractionDigits: 0,
+              useGrouping: false
+            }) : '';
+            break;
+          }
+        case 'number':
+        case 'double':
+        case 'decimal':
+          {
+
+            newDisplay = (nval !== undefined || nval !== null) ? Number(nval).toLocaleString(undefined, {
+              minimumFractionDigits: this.precision,
+              maximumFractionDigits: this.precision
+            }) : '';
+            if (this.format) {
+              newDisplay = this.format.replace('@v', newDisplay);
+            }
+            break;
+          }
+        case 'boolean':
+          {
+            newDisplay = nval ? 'Yes' : 'No';
+            break;
+          }
+        default:
+          newDisplay = nval ? nval.toString() : '';
+          if (this.format) {
+            newDisplay = this.format.replace('@v', newDisplay);
+          }
+          break;
+      }
+
+      this._maskDisplay(newDisplay);
+    }
+  });
+
+</script>

@@ -1,0 +1,32 @@
+{
+  "name": "oe-ajax",
+  "main": "oe-ajax.html",
+  "dependencies": {
+    "polymer": "Polymer/polymer#^1.4.0",
+    "oe-utils": "^0.9.0",
+    "promise-polyfill": "polymerlabs/promise-polyfill#^1.0.0"
+  },
+  "keywords": [
+    "polymer",
+    "webcomponents",
+    "oe-ui"
+  ],
+  "devDependencies": {
+    "iron-component-page": "PolymerElements/iron-component-page#^1.0.0",
+    "iron-demo-helpers": "PolymerElements/iron-demo-helpers#^1.0.0",
+    "web-component-tester": "^4.0.0",
+    "webcomponentsjs": "webcomponents/webcomponentsjs#^0.7.0",
+    "iron-image": "^1.2.6"
+  },
+  "homepage": "https://github.com/EdgeVerve/oe-ajax",
+  "version": "0.9.1",
+  "_release": "0.9.1",
+  "_resolution": {
+    "type": "version",
+    "tag": "0.9.1",
+    "commit": "eb282237981d0a9243da3230fb0606d3ce9285eb"
+  },
+  "_source": "https://github.com/EdgeVerve/oe-ajax.git",
+  "_target": "^0.9.0",
+  "_originalSource": "oe-ajax"
+}

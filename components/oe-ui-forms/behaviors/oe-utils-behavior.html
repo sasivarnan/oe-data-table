@@ -1,0 +1,38 @@
+<!--
+  ©2016-2017 EdgeVerve Systems Limited (a fully owned Infosys subsidiary),
+  Bangalore, India. All Rights Reserved.
+-->
+
+<link rel="import" href="../../polymer/polymer.html">
+
+<script>
+  var OEUtils = OEUtils || {};
+
+  /* @polymerBehavior */
+  var UtilsBehavior = {
+    _isEmpty: function (list) {
+      return !list || list.length === 0;
+    },
+    _isNotEmpty: function (list) {
+      return list && list.length > 0;
+    },
+    _isEqual: function (lhs, rhs) {
+      return lhs === rhs;
+    },
+    uiurl: function (url) {
+      var pre = OEUtils.uibaseroute || '';
+      var post = url || '';
+      if (!pre.endsWith('/')) {
+        pre += '/';
+      }
+      if (post.startsWith('/')) {
+        post = post.substr(1);
+      }
+      return pre + post;
+    }
+  };
+
+  /* @polymerBehavior */
+  OEUtils.UtilsBehavior = [UtilsBehavior];
+
+</script>

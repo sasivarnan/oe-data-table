@@ -1,0 +1,334 @@
+<!-- ©2015-2016 EdgeVerve Systems Limited (a fully owned Infosys subsidiary), Bangalore, India. All Rights Reserved.
+The EdgeVerve proprietary software program ("Program"), is protected by copyrights laws, international treaties and other pending or existing intellectual property rights in India, the United States and other countries.
+The Program may contain/reference third party or open source components, the rights to which continue to
+remain with the applicable third party licensors or the open source community as the case may be and nothing
+here transfers the rights to the third party and open source components, except as expressly permitted.
+Any unauthorized reproduction, storage, transmission in any form or by any means (including without limitation to electronic, mechanical, printing, photocopying, recording or  otherwise), or any distribution of this Program,or any portion of it, may result in severe civil and criminal penalties, and will be prosecuted to the maximum extent possible under the law. -->
+<!doctype html>
+
+<html>
+
+<head>
+
+  <title>oe-typeahead tests</title>
+
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+  <meta name="viewport" content="width=device-width, minimum-scale=1.0, initial-scale=1, user-scalable=yes">
+
+  <script src="../../webcomponentsjs/webcomponents-lite.js"></script>
+
+  <script src="../../web-component-tester/browser.js"></script>
+  <script src="../../iron-test-helpers/test-helpers.js"></script>
+  <script src="../../iron-test-helpers/mock-interactions.js"></script>
+  <script src="../../fakerest/dist/FakeRest.min.js"></script>
+
+  <link rel="import" href="../oe-typeahead.html">
+
+</head>
+
+<body>
+
+  <test-fixture id="basic">
+    <template>
+      <oe-typeahead></oe-typeahead>
+    </template>
+  </test-fixture>
+  <test-fixture id="search">
+    <template>
+      <oe-typeahead searchurl="searchmodel/description/SEARCH_STRING"></oe-typeahead>
+    </template>
+  </test-fixture>
+
+  <test-fixture id="required">
+    <template>
+      <oe-typeahead searchurl="searchmodel/description/SEARCH_STRING" required></oe-typeahead>
+    </template>
+  </test-fixture>
+
+  <test-fixture id="imperative">
+    <template>
+      <oe-typeahead searchurl="searchmodel/description/SEARCH_STRING" displayproperty="description"></oe-typeahead>
+    </template>
+  </test-fixture>
+
+  <test-fixture id="strict">
+    <template>
+      <oe-typeahead strict searchurl="searchmodel/description/SEARCH_STRING"></oe-typeahead>
+    </template>
+  </test-fixture>
+
+  <script>
+    HTMLImports.whenReady(function () {
+      OEUtils.geturl = function (url) {
+        return url;
+      }
+    });
+
+    suite('oe-typeahead', function () {
+
+      var server;
+      var xhr, requests;
+
+      var modeldata = [{
+        'id': 1,
+        'code': 'IN',
+        'description': 'India'
+      }, {
+        'id': 2,
+        'code': 'IR',
+        'description': 'Ireland'
+      }, {
+        'id': 3,
+        'code': 'ID',
+        'description': 'Indonesia'
+      }, {
+        'id': 12,
+        'code': 'US',
+        'description': 'United States of America'
+      }, {
+        'id': 13,
+        'code': 'UK',
+        'description': 'United Kingdom'
+      }, {
+        'id': 14,
+        'code': 'UG',
+        'description': 'Uganda'
+      }, {
+        'id': 14,
+        'code': 'UR',
+        'description': 'Uruguay'
+      }];
+      var stringdata = [
+        'India',
+        'Ireland',
+        'Indonesia',
+        'United States of America',
+        'United Kingdom',
+        'Uganda',
+        'Uruguay'
+      ];
+
+      setup(function () {
+
+        xhr = sinon.useFakeXMLHttpRequest();
+        requests = [];
+        xhr.onCreate = function (req) {
+          requests.push(req);
+        };
+
+        server = sinon.fakeServer.create();
+        server.autoRespond = true;
+        server.respondImmediately = true;
+        // /.*\/searchmodel\/.*\/.*/,
+        server.respondWith(
+          'GET',
+          /searchmodel\/.*\/.*/,
+          //url ~ search-model/description/Sw
+          function (req) {
+            var url = req.url.split('?')[0];
+            var parts = url.split('/');
+            var searchField = parts[parts.length - 2];
+            var searchString = parts[parts.length - 1];
+            var response = modeldata.filter(function (item) {
+              return item[searchField].indexOf(searchString) >= 0;
+            });
+            req.respond(200, 'application/json', JSON.stringify(response));
+          }
+        );
+        server.respondWith(
+          'GET',
+          /fetch-model\/.*\/.*/,
+          //url ~ fetch-model/code/CH
+          function (req) {
+            var parts = req.url.split('/');
+            var searchField = parts[1];
+            var searchString = parts[2];
+            var response = modeldata.filter(function (item) {
+              return item[searchField] == (searchString);
+            });
+            response = response && response[0];
+
+            req.respond(200, 'application/json', response ? JSON.stringify(response) : undefined);
+          }
+        );
+
+        server.respondWith(
+          'GET',
+          /search-string\/.*/,
+          //url ~ typeahead-data/b
+          function (req) {
+            var parts = req.url.split('/');
+            var searchString = parts[1];
+            var response = stringdata.filter(function (item) {
+              return item.indexOf(searchString) >= 0;
+            });
+            response = response && response[0];
+            req.respond(200, 'application/json', JSON.stringify(response));
+          }
+        );
+
+        server.respondWith(
+          'GET',
+          /get-string\/.*/,
+          //url ~ typeahead-data/b
+          function (req) {
+            var url = req.url.split('?')[0];
+            var parts = url.split('/');
+            var searchString = parts[3];
+            var response = stringdata.filter(function (item) {
+              return item === searchString;
+            });
+            req.respond(200, 'application/json', JSON.stringify(response));
+          }
+        );
+
+      });
+      teardown(function () {
+        xhr.restore();
+        server.restore();
+      });
+
+
+      test('when searchUrl is not defined, displayValue should set value', function () {
+        var picker = fixture('basic');
+        picker.set('displayValue', 'ABC');
+        picker.$.input.fire('input');
+        //MockInteractions.keyUpOn(picker.$.input, 78);
+        expect(picker.value).to.equal('ABC');
+        // expect(picker._suggestions).to.be.array;
+        // expect(picker._suggestions.length).to.equal(2);
+      });
+
+      test('suggestions are fetched and displayed', function (done) {
+        var picker = fixture('search');
+        picker.set('displayValue', 'nd');
+        picker.set('searchString', 'nd');
+        picker.$.input.fire('input');
+        //MockInteractions.keyUpOn(picker.$.input, 78);
+        flush(function () {
+          expect(picker._suggestions).to.be.array;
+          expect(picker._suggestions.length).to.equal(4);
+          done();
+        });
+      });
+
+      test('suggestions should not fetch when we type wrong word', function (done) {
+        var picker = fixture('search');
+
+        picker.set('displayValue', 'lmn');
+        picker.set('searchString', 'lmn');
+        picker.$.input.fire('input');
+
+        flush(function () {
+          expect(picker._suggestions).to.be.array;
+          expect(picker._suggestions.length).to.equal(0);
+          done();
+        });
+      });
+
+      test('focus on paper-item and selecting', function (done) {
+        var picker = fixture('search');
+        picker.set('displayValue', 'nd');
+        picker.set('searchString', 'nd');
+        picker.set('displayproperty', 'description');
+        picker.set('valueproperty', 'code');
+        picker.$.input.fire('input');
+        //picker.validate();
+        flush(function () {
+          var menuItems = picker.querySelectorAll('paper-item');
+          MockInteractions.keyUpOn(picker.$.input, 40);
+          MockInteractions.keyUpOn(picker.$.input, 40);
+          MockInteractions.keyUpOn(picker.$.input, 40);
+          MockInteractions.keyUpOn(picker.$.input, 38);
+          MockInteractions.focus(menuItems[1]);
+          MockInteractions.keyUpOn(picker.$.input, 13);
+          expect(picker.$.input.value).to.be.equal('Indonesia');
+          done();
+        });
+      });
+
+      test('fetching the typeahead data', function (done) {
+        var picker = fixture('basic');
+        picker.set('value', 'India');
+        picker.set('searchString', 'India');
+        picker.set('dataurl', 'http://get-string/VALUE_STRING');
+        flush(function () {
+          expect(picker.$.input.value).to.be.equal('India');
+          done();
+        });
+      });
+
+      test('Clicking on paper-item for selecting', function (done) {
+        var picker = fixture('search');
+        picker.set('displayValue', 'nd');
+        picker.set('searchString', 'nd');
+        picker.set('displayproperty', 'description');
+        picker.set('valueproperty', 'code');
+        picker.$.input.fire('input');
+        flush(function () {
+          var menuItems = picker.querySelectorAll('paper-item');
+          MockInteractions.focus(menuItems[1]);
+          MockInteractions.tap(menuItems[1]);
+          expect(picker.$.input.value).to.be.equal('Indonesia');
+          done();
+        });
+      });
+
+      test('Checking for the empty value', function (done) {
+        var picker = fixture('search');
+        picker.set('displayValue', '');
+        picker.$.input.fire('input');
+        flush(function () {
+          var menuItems = picker.querySelectorAll('paper-item');
+          expect(menuItems.length).to.be.equal(0);
+          done();
+        });
+      });
+
+      test('Setting Value as an Object, should update the display', function (done) {
+        var picker = fixture('imperative');
+        picker.set('value', {
+          'id': 14,
+          'code': 'UG',
+          'description': 'Uganda'
+        });
+        flush(function () {
+          expect(picker.$.input.value).to.equal('Uganda');
+          expect(picker.displayValue).to.equal('Uganda');
+          done();
+        });
+      });
+
+      test('Setting text without any match sets the text as value', function (done) {
+        var picker = fixture('search');
+        picker.set('displayValue', 'ddd');
+        picker.set('searchString', 'ddd');
+        picker.$.input.fire('input');
+        flush(function () {
+          expect(picker.$.input.value).to.equal('ddd');
+          expect(picker.value).to.equal('ddd');
+          done();
+        });
+      });
+
+      test('In strict mode, Setting text without any match sets error', function (done) {
+        var picker = fixture('strict');
+        picker.set('displayValue', 'ddd');
+        picker.set('searchString', 'ddd');
+        picker.$.input.fire('input');
+        flush(function () {
+          expect(picker.$.input.value).to.equal('ddd');
+          expect(picker.value).to.not.exist;
+          expect(picker.invalid).to.be.true;
+          expect(picker.errorMessage).to.exist;
+          done();
+        });
+      });
+    });
+
+  </script>
+
+</body>
+
+</html>

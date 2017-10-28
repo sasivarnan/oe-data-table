@@ -1,0 +1,129 @@
+<!-- 
+  ©2016-2017 EdgeVerve Systems Limited (a fully owned Infosys subsidiary),
+  Bangalore, India. All Rights Reserved.
+-->
+<!doctype html>
+<html>
+
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+  <meta name="viewport" content="width=device-width, minimum-scale=1.0, initial-scale=1, user-scalable=yes">
+
+  <title>oe-ui demo</title>
+
+  <script src="../../webcomponentsjs/webcomponents-lite.js"></script>
+
+  <link rel="import" href="../../iron-demo-helpers/demo-pages-shared-styles.html">
+  <link rel="import" href="../../iron-demo-helpers/demo-snippet.html">
+  <link rel="import" href="../../paper-styles/paper-styles.html">
+  <link rel="import" href="custom-styles.html">
+  <link rel="import" href="utils.html">
+
+  <link rel="import" href="../oe-input.html">
+  <link rel="import" href="../oe-textarea.html">
+
+  <script>
+    window.OEUtils = window.OEUtils || {};
+    window.OEUtils.shouldAllBeLowercase = function (value) {
+      var isValid = true;
+      if (value && (value.toLowerCase() !== value)) {
+        isValid = false;
+        this.setValidity(false, 'only-lower-case');
+      }
+      return isValid;
+    };
+
+  </script>
+</head>
+
+<body unresolved>
+
+  <div class="vertical-section-container centered">
+    <h3>Inputs can have different types, and be disabled</h3>
+    <demo-snippet>
+      <template>
+        <oe-input label="text input"></oe-input>
+        <oe-textarea label="autoresizing textarea input"></oe-textarea>
+        <oe-input label="password input" type="password"></oe-input>
+        <oe-input label="disabled input" disabled></oe-input>
+      </template>
+    </demo-snippet>
+
+    <h3>Inputs can have character counters</h3>
+    <demo-snippet>
+      <template>
+        <oe-input label="simple character counter" char-counter></oe-input>
+        <oe-input label="input with at most 10 characters" char-counter maxlength="10"></oe-input>
+      </template>
+    </demo-snippet>
+
+    <h3>The label can have different floating states</h3>
+    <demo-snippet>
+      <template>
+        <oe-input label="this label floats after typing"></oe-input>
+        <oe-input label="this label is always floating" always-float-label></oe-input>
+        <oe-input label="this label never floats" no-label-float></oe-input>
+        <oe-input label="this label is always floating" always-float-label placeholder="placeholder text"></oe-input>
+      </template>
+    </demo-snippet>
+
+    <h3>Inputs can validate automatically or on demand, and can have custom error messages</h3>
+    <demo-snippet>
+      <template>
+        <oe-input label="this input requires some text" required auto-validate error-message="needs some text!"></oe-input>
+        <oe-input label="this input requires letters only" auto-validate pattern="[a-zA-Z]*" error-message="letters only!"></oe-input>
+        <oe-input label="this input will only let you type letters" auto-validate allowed-pattern="[a-zA-Z]"></oe-input>
+        <oe-input id="inputForValidation" required label="this input is manually validated" pattern="[a-zA-Z]*" error-message="letters only!"></oe-input>
+        <button onclick="validate()">Validate!</button>
+        
+        <oe-textarea label="mandatory textarea input" required></oe-textarea>
+
+      </template>
+    </demo-snippet>
+
+    <h3>Inputs can have custom validator functions</h3>
+    <demo-snippet>
+      <template>
+        <template is="dom-bind">
+          <oe-input label="Custom Validator" required validate-on-input validation-function="OEUtils.shouldAllBeLowercase"></oe-input>
+        </template>
+      </template>
+    </demo-snippet>
+
+    <h3>Inputs can have prefixes and suffixes</h3>
+    <demo-snippet class="horizontal">
+      <template>
+        <oe-input label="total" type="number">
+          <div prefix>$</div>
+        </oe-input>
+        <oe-input label="username" id="inputWithButton">
+          <iron-icon icon="mail" prefix></iron-icon>
+          <div suffix>@email.com</div>
+          <paper-icon-button suffix onclick="clearInput()" icon="clear" alt="clear" title="clear">
+          </paper-icon-button>
+        </oe-input>
+      </template>
+    </demo-snippet>
+
+
+    <h3>Inputs can have label internationalization</h3>
+    <demo-snippet class="horizontal">
+      <template>
+        <oe-input label="account">
+        </oe-input>
+        <oe-input label="balance">
+        </oe-input>
+      </template>
+    </demo-snippet>
+
+    <h3>Inputs can have number type</h3>
+    <demo-snippet>
+      <template>
+        <oe-input type="number" label="text input" step="0.1"></oe-input>
+      </template>
+    </demo-snippet>
+  </div>
+</body>
+
+</html>

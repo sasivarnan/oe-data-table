@@ -1,0 +1,228 @@
+<!-- 
+  ©2016-2017 EdgeVerve Systems Limited (a fully owned Infosys subsidiary),
+  Bangalore, India. All Rights Reserved.
+-->
+
+<link rel="import" href="../polymer/polymer.html">
+<link rel="import" href="../iron-input/iron-input.html">
+<link rel="import" href="../paper-input/paper-input-behavior.html">
+<link rel="import" href="../paper-input/paper-input-char-counter.html">
+<link rel="import" href="../paper-input/paper-input-container.html">
+<link rel="import" href="../iron-form-element-behavior/iron-form-element-behavior.html">
+
+<link rel="import" href="../oe-input-error/oe-input-error.html">
+<link rel="import" href="../oe-field-behavior/oe-field-behavior.html">
+<link rel="import" href="../oe-i18n-msg/oe-i18n-msg.html">
+
+<link rel="import" href="../oe-data-mask-behavior/oe-data-mask-behavior.html">
+
+<!--
+### oe-input-masked
+
+`<oe-input-masked>` is a control for text input based on `oe-input`control with following additional features.
+
+  1. mask the each char with a specified char, based on a RegExp pattern
+  2. mask the each matched pattern with a specified string, based on a RegExp pattern
+  3. add specified number of mask char(s) at the end of the specified input.
+
+@demo demo/demo-oe-input-masked.html
+-->
+
+<dom-module id="oe-input-masked">
+  <template>
+    <style>
+       :host {
+        display: block;
+      }
+
+      span.required {
+        vertical-align: bottom;
+        color: var(--paper-input-container-invalid-color, --google-red-500);
+      }
+
+      paper-input-container {
+        display: inline-block;
+        width: calc(100% - 10px);
+      }
+
+      input::-webkit-input-placeholder {
+        color: var(--paper-input-container-color, --secondary-text-color);
+      }
+
+      input:-moz-placeholder {
+        color: var(--paper-input-container-color, --secondary-text-color);
+      }
+
+      input::-moz-placeholder {
+        color: var(--paper-input-container-color, --secondary-text-color);
+      }
+
+      input:-ms-input-placeholder {
+        color: var(--paper-input-container-color, --secondary-text-color);
+      }
+
+    </style>
+
+    <paper-input-container no-label-float="[[noLabelFloat]]" always-float-label="[[_computeAlwaysFloatLabel(alwaysFloatLabel,placeholder)]]"
+      auto-validate$="[[autoValidate]]" disabled$="[[disabled]]" invalid="[[invalid]]">
+
+      <content select="[prefix]"></content>
+
+      <label hidden$="[[!label]]">
+          <oe-i18n-msg msgid=[[label]]>[[label]]</oe-i18n-msg>
+          <template is="dom-if" if={{required}}>
+            <span class="required"> *</span>
+          </template>
+      </label>
+
+      <input is="iron-input" id="input" aria-labelledby$="[[_ariaLabelledBy]]" aria-describedby$="[[_ariaDescribedBy]]" disabled$="[[disabled]]"
+        bind-value="{{display}}" invalid="{{invalid}}" prevent-invalid-input="[[preventInvalidInput]]" allowed-pattern="[[allowedPattern]]"
+        validator="[[validator]]" type$="[[type]]" pattern$="[[pattern]]" required$="[[required]]" autocomplete$="[[autocomplete]]"
+        autofocus$="[[autofocus]]" inputmode$="[[inputmode]]" minlength$="[[minlength]]" maxlength$="[[maxlength]]" min$="[[min]]"
+        max$="[[max]]" step$="[[step]]" name$="[[name]]" placeholder$="[[placeholder]]" readonly$="[[readonly]]" list$="[[list]]"
+        size$="[[size]]" autocapitalize$="[[autocapitalize]]" autocorrect$="[[autocorrect]]" on-change="_onChange" tabindex$="[[tabindex]]"
+        autosave$="[[autosave]]" results$="[[results]]" accept$="[[accept]]" multiple$="[[multiple]]">
+
+      <content select="[suffix]"></content>
+
+      <oe-input-error invalid={{invalid}} placeholders={{errorPlaceholders}} error-message={{errorMessage}}></oe-input-error>
+
+      <template is="dom-if" if="[[charCounter]]">
+        <paper-input-char-counter></paper-input-char-counter>
+      </template>
+
+    </paper-input-container>
+  </template>
+</dom-module>
+
+<script>
+  Polymer({
+    is: 'oe-input-masked',
+    properties: {
+
+      /**
+       * Masked value to display in the control
+       */
+      display: {
+        type: Object
+      }
+
+    },
+    listeners: {
+      'change': 'validate',
+      'keydown': '_buildValue',
+      'keypress': '_buildValue',
+      'blur': '_blured',
+      'focus': '_focused'
+    },
+    behaviors: [
+      Polymer.IronFormElementBehavior,
+      Polymer.PaperInputBehavior,
+      OEUtils.FieldBehavior,
+      OEUtils.DataMaskBehavior
+    ],
+
+    /**
+     * validates the entered `value`
+     */
+    _validate: function () {
+      var isValid = true;
+      if (this.maxlength && this.value && this.value.length > this.maxlength) {
+        this.setValidity(false, 'tooLong');
+        isValid = false;
+      } else if (this.minlength && (!this.value || this.value.length < this.minlength)) {
+        this.setValidity(false, 'tooShort');
+        isValid = false;
+      }
+      return isValid;
+    },
+
+    /**
+     * Builds the maked display based on the `value` of the input
+     */
+    _buildValue: function (evt) {
+      //console.log(evt);
+
+      var inputEle = this.$.input,
+        s = this.value,
+        newCursorPosition;
+      var charToAppend = '';
+      this.value || (this.value = '');
+      var start = Math.min(inputEle.selectionStart, inputEle.selectionEnd);
+      var end = Math.max(inputEle.selectionStart, inputEle.selectionEnd);
+
+      //don't do anything if ctrl or alt key is pressed
+      if (evt.ctrlKey || evt.altKey) {
+        if ([8, 46].indexOf(evt.keyCode) > -1)
+          evt.preventDefault();
+        return;
+      }
+
+      // handle for delete and backspace key when nothing is selected
+      if (evt.type == 'keydown') {
+        switch (evt.keyCode) {
+          case 8:
+            (start == end) && (this.value = s.substring(0, start - 1) + s.substring(start, s.length));
+            newCursorPosition = end - 1;
+            break;
+          case 46:
+            (start == end) && (this.value = s.substring(0, start) + s.substring(start + 1, s.length));
+            newCursorPosition = end;
+            break;
+          default:
+            return;
+        }
+      } else {
+
+        //ignore enter key
+        var keysToIgnore = [13];
+
+        if (keysToIgnore.indexOf(evt.keyCode) != -1) return;
+
+        //convert keycode to char
+        charToAppend = String.fromCharCode(evt.keyCode);
+
+        if (start != this.value.length) {
+          //if  the cursor is in middle or begining
+          this.value = s.substring(0, start) + charToAppend + s.substring(start, s.length);
+          newCursorPosition = start + 1;
+        } else {
+          //if  the cursor is in the end
+          this.value += charToAppend;
+          newCursorPosition = this.value.length;
+        }
+
+      }
+
+      evt.preventDefault();
+
+      //if some selection is made, remove the selected character(s) and insert the new character
+      if (start != end) {
+        this.value = s.substring(0, start) + charToAppend + s.substring(end, s.length);
+        newCursorPosition = start + 1;
+      }
+
+      this.set('formattedDisplay', this.value);
+
+      //set the cursor position according to the newly inserted
+      inputEle.selectionStart = inputEle.selectionEnd = newCursorPosition;
+    },
+
+    /**
+     * Appends specified number of characters to the input on blur
+     */
+    _blured: function () {
+      (this.appendCharLength > 0 && this.display.length) && this.set('display', this.display + new Array(this.appendCharLength +
+        1).join(this.maskChar));
+    },
+
+    /**
+     * Removes the appended characters to the input on focus
+     */
+    _focused: function () {
+      this.set('formattedDisplay', '');
+      this.set('formattedDisplay', this.value);
+    }
+  });
+
+</script>

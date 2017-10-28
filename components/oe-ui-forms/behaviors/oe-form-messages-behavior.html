@@ -1,0 +1,45 @@
+<!--
+  ©2016-2017 EdgeVerve Systems Limited (a fully owned Infosys subsidiary),
+  Bangalore, India. All Rights Reserved.
+-->
+<link rel="import" href="../../polymer/polymer.html">
+
+<script>
+  var OEUtils = OEUtils || {};
+
+  OEUtils.FormMessagesBehavior = {
+    properties: {
+      deleteSuccessMessage: {
+        type: String,
+        value: 'record-deleted'
+      },
+      insertSuccessMessage: {
+        type: String,
+        value: 'record-created'
+      },
+      updateSuccessMessage: {
+        type: String,
+        value: 'record-updated'
+      }
+    },
+    listeners: {
+      'oe-formdata-inserted': '_showInsertSuccess',
+      'oe-formdata-updated': '_showUpdateSuccess',
+      'oe-formdata-deleted': '_showDeleteSuccess',
+      'oe-formdata-loaded': '_showLoadSuccess'
+    },
+    _showInsertSuccess: function () {
+      this.fire('oe-show-success', this.insertSuccessMessage || 'Data inserted succesfully');
+    },
+    _showUpdateSuccess: function () {
+      this.fire('oe-show-success', this.updateSuccessMessage || 'Data updated succesfully');
+    },
+    _showDeleteSuccess: function () {
+      this.fire('oe-show-warning', this.deleteSuccessMessage || 'Data deleted');
+    },
+    _showLoadSuccess: function () {
+      this.fire('oe-show-message', 'Data loaded');
+    }
+  };
+
+</script>

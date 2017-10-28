@@ -1,0 +1,69 @@
+<!-- 
+  ©2016-2017 EdgeVerve Systems Limited (a fully owned Infosys subsidiary),
+  Bangalore, India. All Rights Reserved.
+-->
+<!doctype html>
+<html>
+
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+  <meta name="viewport" content="width=device-width, minimum-scale=1.0, initial-scale=1, user-scalable=yes">
+
+  <title>oe-typeahead demo</title>
+
+  <script src="../../webcomponentsjs/webcomponents-lite.js"></script>
+
+  <link rel="import" href="../../iron-demo-helpers/demo-pages-shared-styles.html">
+  <link rel="import" href="../../iron-demo-helpers/demo-snippet.html">
+  <link rel="import" href="../../paper-styles/paper-styles.html">
+  <link rel="import" href="custom-styles.html">
+  <link rel="import" href="utils.html">
+
+  <link rel="import" href="../oe-typeahead.html">
+
+</head>
+
+<body unresolved>
+
+  <div class="vertical-section-container centered">
+    <h3>Typeahead</h3>
+    <demo-snippet>
+      <template>
+
+        <template is="dom-bind">
+          <oe-typeahead label="Search..." displayproperty="description" valueproperty="code" searchurl="data/country/SEARCH_STRING.json"
+            dataurl="data/country/VALUE_STRING.json" value="{{value}}"></oe-typeahead>
+          <label>[[value]]</label>
+        </template>
+      </template>
+    </demo-snippet>
+
+    <h3>Validations</h3>
+    <demo-snippet>
+      <template>
+
+        <template is="dom-bind">
+          <oe-typeahead label="Search..." displayproperty="description" valueproperty="code" searchurl="data/country/SEARCH_STRING.json"
+            dataurl="data/country/VALUE_STRING.json" value="{{value}}" required></oe-typeahead>
+          <label>[[value]]</label>
+        </template>
+      </template>
+    </demo-snippet>
+
+    <h3>Strict</h3>
+    <demo-snippet>
+      <template>
+
+        <template is="dom-bind">
+          <oe-typeahead strict label="Search..." no-data-found={{noDataFound}} displayproperty="description" valueproperty="code" searchurl="data/country/SEARCH_STRING.json"
+            dataurl="data/country/VALUE_STRING.json" value="{{value}}" required></oe-typeahead>
+          <label>[[value]]</label>
+        </template>
+      </template>
+    </demo-snippet>
+
+  </div>
+</body>
+
+</html>

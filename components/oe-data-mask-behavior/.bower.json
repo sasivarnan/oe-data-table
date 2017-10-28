@@ -1,0 +1,24 @@
+{
+  "name": "oe-data-mask-behavior",
+  "main": "oe-data-mask-behavior.html",
+  "dependencies": {
+    "polymer": "Polymer/polymer#^1.4.0"
+  },
+  "devDependencies": {
+    "iron-component-page": "PolymerElements/iron-component-page#^1.0.0",
+    "iron-demo-helpers": "PolymerElements/iron-demo-helpers#^1.0.0",
+    "web-component-tester": "^4.0.0",
+    "webcomponentsjs": "webcomponents/webcomponentsjs#^0.7.0"
+  },
+  "homepage": "https://github.com/EdgeVerve/oe-data-mask-behavior",
+  "version": "0.9.0",
+  "_release": "0.9.0",
+  "_resolution": {
+    "type": "version",
+    "tag": "0.9.0",
+    "commit": "31f6be63550250a69d8ca8a14b225a1ef587e801"
+  },
+  "_source": "https://github.com/EdgeVerve/oe-data-mask-behavior.git",
+  "_target": "^0.9.0",
+  "_originalSource": "oe-data-mask-behavior"
+}

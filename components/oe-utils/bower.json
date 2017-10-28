@@ -1,0 +1,8 @@
+{
+  "name": "oe-utils",
+  "description": "Util Library for oe-ui elements",
+  "main": ["oe-utils.js", "date-utils.js"],
+  "devDependencies": {
+    "web-component-tester": "Polymer/web-component-tester#^5.0.1"
+  }
+}

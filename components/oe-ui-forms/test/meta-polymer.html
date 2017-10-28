@@ -1,0 +1,1685 @@
+<!--
+  ©2016-2017 EdgeVerve Systems Limited (a fully owned Infosys subsidiary),
+  Bangalore, India. All Rights Reserved.
+-->
+<!doctype html>
+<html>
+
+<head>
+
+  <title>meta-polymer tests</title>
+
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+  <meta name="viewport" content="width=device-width, minimum-scale=1.0, initial-scale=1, user-scalable=yes">
+
+  <script src="../../webcomponentsjs/webcomponents-lite.js"></script>
+
+  <script src="../../web-component-tester/browser.js"></script>
+  <script src="../../iron-test-helpers/test-helpers.js"></script>
+  <script src="../../iron-test-helpers/mock-interactions.js"></script>
+  <script src="../../fakerest/dist/FakeRest.min.js"></script>
+
+  <link rel="import" href="../../iron-ajax/iron-ajax.html">
+
+  <link rel="import" href="../../oe-input/oe-input.html">
+  <link rel="import" href="../../oe-date/oe-date.html">
+  <link rel="import" href="../../oe-input/oe-decimal.html">
+
+  <link rel="import" href="../behaviors/oe-form-messages-behavior.html">
+  <link rel="import" href="../behaviors/oe-form-validation-behavior.html">
+  <link rel="import" href="../behaviors/oe-model-handler.html">
+  <link rel="import" href="../behaviors/oe-utils-behavior.html">
+  <link rel="import" href="../validators/oe-async-validator.html">
+  <link rel="import" href="../validators/oe-block-validator.html">
+  <link rel="import" href="../validators/oe-combination-validator.html">
+  <link rel="import" href="../validators/oe-eq-validator.html">
+  <link rel="import" href="../validators/oe-expression-validator.html">
+  <link rel="import" href="../validators/oe-le-validator.html">
+  <link rel="import" href="../validators/oe-lt-validator.html">
+  <link rel="import" href="../validators/oe-ne-validator.html">
+
+  <script>
+    var masterMetadata = {
+      'componentName': 'employee-form',
+      'elements': {
+        'dateOfBirth': {
+          'uitype': 'oe-date',
+          'format': 'DD-MM-YYYY'
+        }
+      },
+      'modelName': 'Employee',
+      'modelAlias': 'employee',
+      'metadata': {
+        'models': {
+          'Employee': {
+            'resturl': '/employees',
+            'properties': {
+              'firstName': {
+                'type': 'string',
+                'required': true
+              },
+              'lastName': {
+                'type': 'string',
+                'required': true
+              },
+              'empId': {
+                'type': 'string',
+                'unique': true,
+                'required': true
+              },
+              'category': {
+                'type': 'combo',
+                'in': [
+                  'L1',
+                  'L2',
+                  'L3'
+                ],
+                'listdata': [
+                  'L1',
+                  'L2',
+                  'L3'
+                ]
+              },
+              'joiningDate': {
+                'type': 'date',
+                'required': true
+              },
+              'salary': {
+                'type': 'number',
+                'required': true,
+                'default': 100000
+              },
+              'priorExp': {
+                'type': 'number',
+                'min': 1,
+                'max': 50
+              },
+              'totalExp': {
+                'type': 'number'
+              },
+              'comments': {
+                'type': 'string',
+                'required': true,
+                'min': 20,
+                'max': 120
+              },
+              'bandApplicable': {
+                'type': 'boolean',
+                'default': true
+              },
+              'academics': {
+                'type': 'model',
+                'modeltype': 'Academics'
+              },
+              'skills': {
+                'type': 'tags',
+                'itemtype': 'string'
+              },
+              'rankings': {
+                'type': 'tags',
+                'itemtype': 'number'
+              },
+              'revisionDates': {
+                'type': 'tags',
+                'itemtype': 'date'
+              },
+              'addresses': {
+                'type': 'grid',
+                'itemtype': 'model',
+                'modeltype': 'Address',
+                'subModelMeta': {
+                  'line1': {
+                    'type': 'string',
+                    'required': true
+                  },
+                  'city': {
+                    'type': 'string'
+                  },
+                  'isCurrent': {
+                    'type': 'boolean'
+                  },
+                  'stayingSince': {
+                    'type': 'date'
+                  }
+                }
+              },
+              'projectId': {
+                'type': 'typeahead',
+                'valueproperty': 'id',
+                'displayproperty': 'name',
+                'resturl': '/projects',
+                'searchurl': '/projects?filter[where][name][regexp]=/^SEARCH_STRING/i&filter[limit]=5',
+                'dataurl': '/projects/VALUE_STRING'
+              }
+            }
+          },
+          'Academics': {
+            'resturl': '/api/Academics',
+            'properties': {
+              'graduation': {
+                'type': 'boolean',
+                'default': true
+              },
+              'matriculation': {
+                'type': 'boolean',
+                'default': true
+              },
+              'postGraduation': {
+                'type': 'boolean',
+                'default': false
+              },
+              'marks': {
+                'type': 'string',
+                'in': [
+                  'cgpa',
+                  'percentage',
+                  'grade'
+                ]
+              }
+            }
+          },
+          'Address': {
+            'resturl': '/api/Addresses',
+            'properties': {
+              'line1': {
+                'type': 'string',
+                'required': true
+              },
+              'city': {
+                'type': 'string'
+              },
+              'isCurrent': {
+                'type': 'boolean'
+              },
+              'stayingSince': {
+                'type': 'date'
+              }
+            }
+          },
+          'Project': {
+            'resturl': '/projects',
+            'properties': {
+              'name': {
+                'type': 'string',
+                'required': true
+              }
+            }
+          },
+          'Task': {
+            'resturl': '/api/Tasks',
+            'properties': {
+              'taskName': {
+                'type': 'string',
+                'required': true
+              },
+              'efforts': {
+                'type': 'number'
+              },
+              'startDate': {
+                'type': 'date',
+                'required': true
+              },
+              'employeeId': {
+                'type': 'objectid'
+              }
+            }
+          }
+        },
+        'resturl': '/employees',
+        'properties': {
+          'firstName': {
+            'type': 'string',
+            'required': true
+          },
+          'lastName': {
+            'type': 'string',
+            'required': true
+          },
+          'empId': {
+            'type': 'string',
+            'unique': true,
+            'required': true
+          },
+          'category': {
+            'type': 'combo',
+            'in': [
+              'L1',
+              'L2',
+              'L3'
+            ],
+            'listdata': [
+              'L1',
+              'L2',
+              'L3'
+            ]
+          },
+          'joiningDate': {
+            'type': 'date',
+            'required': true
+          },
+          'salary': {
+            'type': 'number',
+            'required': true,
+            'default': 100000
+          },
+          'priorExp': {
+            'type': 'number',
+            'min': 1,
+            'max': 50
+          },
+          'totalExp': {
+            'type': 'number'
+          },
+          'comments': {
+            'type': 'string',
+            'required': true,
+            'min': 20,
+            'max': 120
+          },
+          'bandApplicable': {
+            'type': 'boolean',
+            'default': true
+          },
+          'academics': {
+            'type': 'model',
+            'modeltype': 'Academics'
+          },
+          'skills': {
+            'type': 'tags',
+            'itemtype': 'string'
+          },
+          'rankings': {
+            'type': 'tags',
+            'itemtype': 'number'
+          },
+          'revisionDates': {
+            'type': 'tags',
+            'itemtype': 'date'
+          },
+          'addresses': {
+            'type': 'grid',
+            'itemtype': 'model',
+            'modeltype': 'Address',
+            'subModelMeta': {
+              'line1': {
+                'type': 'string',
+                'required': true
+              },
+              'city': {
+                'type': 'string'
+              },
+              'isCurrent': {
+                'type': 'boolean'
+              },
+              'stayingSince': {
+                'type': 'date'
+              }
+            }
+          },
+          'projectId': {
+            'type': 'typeahead',
+            'valueproperty': 'id',
+            'displayproperty': 'name',
+            'resturl': '/projects',
+            'searchurl': '/projects?filter[where][name][regexp]=/^SEARCH_STRING/i&filter[limit]=5',
+            'dataurl': '/projects/VALUE_STRING'
+          }
+        }
+      },
+      'autoInjectFields': true
+    };
+
+    masterMetadata.fields = [{
+      fieldId: 'firstName',
+      label: 'Employee First Name',
+      container: 'main'
+    }, {
+      fieldId: 'category',
+      container: 'missing'
+    }, 'salary', {
+      fieldId: 'skills',
+      'data-obj-attribute': {
+        y: 'test'
+      }
+    }, {
+      uitype: 'oe-info',
+      'label': 'Custom Field',
+      'value': 'Custom Value',
+      'data-info-attribute': 'test'
+    }];
+    masterMetadata.excludeFields = ['comments'];
+    masterMetadata.oeValidations = [{
+      type: 'oe-eq-validator',
+      fields: ['pf', 'reenter_pf'],
+      error: 'fields-should-be-equal'
+    }, {
+      type: 'oe-ne-validator',
+      fields: ['firstName', 'lastName'],
+      error: 'fields-should-not-be-equal'
+    }, {
+      type: 'oe-lt-validator',
+      fields: ['dateOfBirth', 'joiningDate'],
+      error: 'dob-should-be-less-than-joining-date'
+    }, {
+      type: 'oe-le-validator',
+      fields: ['priorExp', 'totalExp'],
+      error: 'prior-exp-should-be-less-or-equal-to-total-exp'
+    }, {
+      type: 'oe-expression-validator',
+      fields: ['firstName', 'lastName'],
+      expression: '(!firstName || firstName.length>3) && (!lastName || lastName.length>6)',
+      error: 'expression-validation-failed'
+    }, {
+      type: 'oe-combination-validator',
+      fields: ['bandApplicable', 'totalExp', 'priorExp'],
+      combinations: [{
+        bandApplicable: true
+      }, {
+        bandApplicable: false,
+        totalExp: 10,
+        priorExp: 5
+      }],
+      error: 'combination-validation-failed'
+    }, {
+      type: 'oe-async-validator',
+      fields: ['projectId'],
+      requesturl: '/projects/[[employee.projectId]]',
+      error: 'invalid-project-id'
+    }];
+
+    masterMetadata.content =
+      '<oe-field data-content="true" field-id="revisionDates"></oe-field><oe-field data-content="true" oe-container="main" field-id="dateOfBirth"></oe-field><oe-field data-content="true" oe-container="another" field-id="rankings"></oe-field>';
+    var OEUtils = OEUtils || {};
+    OEUtils.metadataCache = OEUtils.metadataCache || {};
+    OEUtils.metadataCache['employee-form'] = masterMetadata;
+
+
+    var expressionsMeta = JSON.parse(JSON.stringify(masterMetadata));
+    OEUtils.metadataCache['employee-expressions-form'] = expressionsMeta;
+
+    expressionsMeta.fields = [{
+      fieldId: 'lastName',
+      disabled: '!{{@i.firstName}}'
+    }, {
+      fieldId: 'dateOfBirth',
+      required: '{{@i.firstName}} && {{@i.firstName}}.length>0 && {{@i.lastName}} && {{@i.lastName}}.length>0'
+    }, {
+      fieldId: 'salary',
+      precision: '{{@i.firstName}}?{{@i.firstName}}.length:2'
+    }, {
+      fieldId: 'bandApplicable',
+      class: '({{@i.salary}}>50000)?"visible":"hidden"'
+    }, {
+      fieldId: 'firstName',
+      class: '[[getCSSClass({{@i.salary}})]]'
+    }, {
+      fieldId: 'pf',
+      value: '0.12 * {{@i.salary}}'
+    }];
+
+    var restdata = {
+      employees: [{
+        id: 1,
+        empId: 1,
+        _version: 1,
+        firstName: 'John',
+        lastName: 'Illingworth',
+        dateOfBirth: new Date(1980, 1, 15),
+        bandApplicable: true,
+        salary: 500000,
+        pf: 94054545,
+        _createdOn: new Date()
+      }, {
+        id: 2,
+        empId: 2,
+        _version: 1,
+        firstName: 'Angela',
+        lastName: 'Jozinsky',
+        dateOfBirth: new Date(1982, 5, 27),
+        bandApplicable: true,
+        salary: 634402,
+        pf: 38723423,
+        _createdOn: new Date()
+      }, {
+        id: 3,
+        empId: 3,
+        _version: 1,
+        firstName: 'Pyotr',
+        lastName: 'Jokovich',
+        dateOfBirth: new Date(1977, 3, 8),
+        bandApplicable: true,
+        salary: 1023433,
+        pf: 3129312,
+        _createdOn: new Date()
+      }],
+      projects: [{
+        id: 1001,
+        name: 'Gravity'
+      }, {
+        id: 1002,
+        name: 'SpeedBoat'
+      }]
+    };
+    var server = sinon.fakeServer.create();
+    server.autoRespond = true;
+    server.respondWith(
+      'GET',
+      /\/api\/UIComponents\/modelmeta\/.*/,
+      function (req) {
+        var url = req.url.split('?')[0];
+        var parts = url.split('/');
+        var componentName = parts[parts.length - 1];
+        var origComponentName = masterMetadata.componentName;
+        masterMetadata.componentName = componentName;
+        req.respond(200, 'application/json', JSON.stringify(masterMetadata));
+        masterMetadata.componentName = origComponentName;
+      }
+    );
+    server.respondWith(
+      'GET',
+      /\/api\/TypeMappings/,
+      function (req) {
+        req.respond(200, 'application/json', JSON.stringify([{
+          type: 'object',
+          uiType: 'oe-json-input',
+          rows: 1,
+          maxRows: 5
+        }]));
+      }
+    );
+
+    // server.respondWith(
+    //   'GET',
+    //   /\/projects/,
+    //   function (req) {
+    //     req.respond(200, "application/json", JSON.stringify(restdata.projects));
+    //   }
+    // );
+
+    // server.respondWith(
+    //   'GET',
+    //   /\/projects\/.*/,
+    //   function (req) {
+    //     var url = req.url.split('?')[0];
+    //     var parts = url.split('/');
+    //     var recordId = parts[parts.length - 1];
+    //     var record = restdata.projects.find(function (item) {
+    //       return item.id == recordId;
+    //     });
+    //     if (record) {
+    //       req.respond(200, "application/json", JSON.stringify(record));
+    //     } else {
+    //       req.respond(404);
+    //     }
+    //   }
+    // );
+    // server.respondWith(
+    //   'GET',
+    //   /\/employees/,
+    //   function (req) {
+    //     req.respond(200, "application/json", JSON.stringify(restdata.employees));
+    //   }
+    // );
+
+    // server.respondWith(
+    //   'GET',
+    //   /\/employees\/.*/,
+    //   function (req) {
+    //     var url = req.url.split('?')[0];
+    //     var parts = url.split('/');
+    //     var recordId = parts[parts.length - 1];
+    //     var record = restdata.employees.find(function (item) {
+    //       return item.id == recordId;
+    //     });
+    //     if (record) {
+    //       req.respond(200, "application/json", JSON.stringify(record));
+    //     } else {
+    //       req.respond(404);
+    //     }
+    //   }
+    // );
+
+    var restServer = new FakeRest.Server(); //eslint-disable-line no-undef
+    restServer.init(restdata);
+
+    restServer.addRequestInterceptor(function (request) {
+      if (request.method === 'POST' && request.json) {
+        request.json.id = (window.crypto || window.msCrypto).getRandomValues(new Uint32Array(1))[0] % 100; //eslint-disable-line no-undef
+        request.json._version = 1;
+        request.requestBody = JSON.parse(JSON.stringify(request.json));
+      }
+      if (request.method === 'PUT' && request.json) {
+        request.json._version++;
+        request.requestBody = JSON.parse(JSON.stringify(request.json));
+      }
+      if (request.method === 'DELETE' && request.json && request.json.id && request.json._version) {
+        var parts = request.url.split('/');
+        //remove the version part.
+        parts.pop();
+        request.url = parts.join('/');
+      }
+      return request;
+    });
+
+    server.respondWith(restServer.getHandler());
+
+//    if (OEUtils.geturl) {
+      OEUtils.geturl = function (url) {
+        return url;
+      }
+//    }
+
+  </script>
+
+
+  <!-- We need to wait for FakeAPIs to be setup before loading meta-polymer.html
+    as it calls /api/TypeMappings which will fail.-->
+  <link rel="import" href="../meta-polymer.html">
+  <link rel="import" href="../lazy-component.html">
+
+  <script>
+    window.OEUtils.TypeMappings = window.OEUtils.TypeMappings || {};
+    window.OEUtils.TypeMappings.string = {
+      type: 'string',
+      uiType: 'oe-input',
+      attributes: [{
+        'name': 'data-txt-attribute',
+        'value': 'some-value'
+      }, {
+        'name': 'data-obj-attribute',
+        'value': {
+          x: 1
+        }
+      }]
+    };
+    window.OEUtils.TypeMappings.tags = {
+      type: 'tags',
+      uiType: 'oe-paper-chip',
+      attributes: [{
+        'name': 'data-txt-attribute',
+        'value': 'some-value'
+      }, {
+        'name': 'data-obj-attribute',
+        'value': {
+          x: 1
+        }
+      }]
+    };
+
+  </script>
+</head>
+
+<body>
+  <dom-module id="not-cached">
+    <template>
+      <div>
+      </div>
+    </template>
+    <script>
+      MetaPolymer({
+        is: 'not-cached',
+        properties: {}
+      });
+
+    </script>
+  </dom-module>
+
+  <dom-module id="employee-expressions-form">
+    <template>
+      <div>
+      </div>
+    </template>
+    <script>
+      MetaPolymer({
+        is: 'employee-expressions-form',
+        properties: {},
+        getCSSClass: function (salary) {
+          if (salary > 50000) return 'green';
+          else return 'red';
+        }
+      });
+
+    </script>
+  </dom-module>
+
+  <dom-module id="employee-form">
+    <template>
+      <style></style>
+      <div class="content layout vertical">
+        <div class="evform layout vertical">
+          <div class="layout horizontal">
+            <div>
+              <template is="toolbar"></template>
+              <paper-button id="save" raised primary on-tap="doSave">Save</paper-button>
+              <paper-button raised on-tap="doClear">Clear</paper-button>
+              <template is="dom-if" if="{{employee.id}}">
+                <paper-button raised on-tap="doFetch">Reset</paper-button>
+                <paper-button raised on-tap="doDelete">Delete</paper-button>
+              </template>
+            </div>
+          </div>
+          <div id="main" class="layout horizontal wrap">
+            <oe-field field-id="empId"></oe-field>
+            <oe-fields list="priorExp,skills"></oe-fields>
+            <oe-paper-chip field-id="skills"></oe-paper-chip>
+          </div>
+          <div id="fields" class="layout horizontal wrap"></div>
+          <div id="grids" class="layout vertical"></div>
+        </div>
+      </div>
+    </template>
+    <script>
+      MetaPolymer({
+        is: 'employee-form',
+        properties: {
+          employee: {
+            type: 'object',
+            notify: true
+          }
+        },
+        behaviors: [OEUtils.FormValidationBehavior, OEUtils.ModelHandler]
+      });
+
+    </script>
+  </dom-module>
+
+
+  <test-fixture id="simple">
+    <template>
+      <employee-form></employee-form>
+    </template>
+  </test-fixture>
+  <test-fixture id="notcached">
+    <template>
+      <not-cached></not-cached>
+    </template>
+  </test-fixture>
+
+  <test-fixture id="expressions">
+    <template>
+      <employee-expressions-form></employee-expressions-form>
+    </template>
+  </test-fixture>
+  <script>
+    suite('MetaPolymer', function () {
+
+      var simpleMetadata = {
+        code: 'simple',
+        fields: [{
+          name: 'search_employee',
+          type: 'typeahead',
+          label: 'Search...',
+          fieldid: 'search',
+          container: 'search'
+        }, {
+          name: 'main_firstName_0',
+          type: 'text',
+          label: 'First Name',
+          fieldid: 'firstName',
+          container: 'main'
+        }, {
+          name: 'main_lastName_1',
+          type: 'string',
+          label: 'Last Name',
+          fieldid: 'lastName',
+          disabled: true,
+          container: 'main'
+        }, {
+          name: 'details_dateOfBirth_0',
+          type: 'date',
+          label: 'Birth Date',
+          fieldid: 'dateOfBirth',
+          required: true,
+          container: 'details'
+        }, {
+          name: 'details_bandApplicable_1',
+          type: 'boolean',
+          label: 'Band Applicable',
+          fieldid: 'bandApplicable',
+          class: 'hidden',
+          container: 'details'
+        }, {
+          name: 'details_salary_2',
+          type: 'number',
+          label: 'Salary',
+          fieldid: 'salary',
+          precision: 2,
+          container: 'details'
+        }, {
+          name: 'details_pf_3',
+          type: 'number',
+          label: 'PF',
+          fieldid: 'pf',
+          precision: 1,
+          container: 'details'
+        }, {
+          name: 'details_repf_4',
+          type: 'number',
+          label: 'PF',
+          fieldid: 'reenter_pf',
+          precision: 1,
+          container: 'details'
+        }, {
+          name: 'details_totalexp_5',
+          type: 'number',
+          label: 'Total Experience',
+          fieldid: 'totalExp',
+          precision: 1,
+          container: 'details'
+        }, {
+          name: 'details_priorexp_6',
+          type: 'number',
+          label: 'Prior Experience',
+          fieldid: 'priorExp',
+          precision: 1,
+          container: 'details'
+        }, {
+          name: 'details_projectId_7',
+          type: 'text',
+          label: 'Project',
+          fieldid: 'projectId',
+          container: 'details'
+        }, {
+          name: 'details_joiningDate_8',
+          type: 'date',
+          label: 'Joining Date',
+          fieldid: 'joiningDate',
+          container: 'details'
+        }, {
+          name: 'details_port_9',
+          type: 'integer',
+          label: 'Port Number',
+          fieldid: 'portNum',
+          container: 'details'
+        }],
+        'functions': {
+          'foo': 'function(x){return x+1;}',
+          'bar': 'function(x){return x-1;}'
+        },
+        defaultVM: {
+          bandApplicable: true,
+          salary: 30000
+        }
+      };
+
+
+      var actionsMetadata = JSON.parse(JSON.stringify(simpleMetadata));
+      actionsMetadata.resturl = '/employees';
+
+      //var validationsMeta = JSON.parse(JSON.stringify(simpleMetadata));
+
+      setup(function () {
+
+      });
+      teardown(function () {
+        //server.restore();
+      });
+
+
+      suite('generation', function () {
+        test('should pull TypeMappings from server and merge', function (done) {
+          expect(OEUtils.TypeMappings).to.exist;
+          expect(OEUtils.TypeMappings.object).to.exist;
+          expect(OEUtils.TypeMappings.object.rows).to.equal(1);
+          expect(OEUtils.TypeMappings.object.maxRows).to.equal(5);
+          done();
+        });
+        test('should generate Polymer component', function (done) {
+          var element = fixture('simple');
+          expect(Polymer.telemetry.registrations.find(function (i) {
+            return i.is === 'employee-form';
+          })).to.exist;
+          expect(element.set).to.exist.and.be.a.function;
+          done();
+        });
+        test('generated element has MetaBehavior and relevant data is set', function (done) {
+          var element = fixture('simple');
+          expect(element.meta).to.exist.and.equal(OEUtils.metadataCache[element.is]);
+          expect(element.modelAlias).to.exist.and.equal(OEUtils.metadataCache[element.is].modelAlias);
+          expect(element.resturl).to.exist.and.equal(OEUtils.metadataCache[element.is].metadata.resturl);
+          expect(element.defaultVM).to.exist.and.equal(OEUtils.metadataCache[element.is].defaultVM);
+          done();
+        });
+
+        test('Metadata is fetched if not available in cache', function (done) {
+          var element = fixture('notcached');
+          expect(element.meta).to.exist.and.equal(OEUtils.metadataCache[element.is]);
+          expect(element.modelAlias).to.exist.and.equal(OEUtils.metadataCache[element.is].modelAlias);
+          expect(element.resturl).to.exist.and.equal(OEUtils.metadataCache[element.is].metadata.resturl);
+          expect(element.defaultVM).to.exist.and.equal(OEUtils.metadataCache[element.is].defaultVM);
+          done();
+        });
+      });
+
+      suite('controls', function () {
+        test('Field control without fieldId is generated', function (done) {
+          var element = fixture('simple');
+          var ctrl = Polymer.dom(element.root).querySelector('oe-info[data-info-attribute=test]');
+          expect(ctrl).to.exist;
+          done();
+        });
+        test('should generate input-box for string type', function (done) {
+          var element = fixture('simple');
+          var ctrl = Polymer.dom(element.root).querySelector('[field-id=firstName]');
+          expect(ctrl).to.exist;
+          expect(ctrl.nodeName.toLowerCase()).to.equal(OEUtils.TypeMappings.string.uiType);
+          done();
+        });
+        test('should generate oe-decimal for number type', function (done) {
+          var element = fixture('simple');
+          var salaryCtrl = Polymer.dom(element.root).querySelector('[field-id=salary]');
+          expect(salaryCtrl).to.exist;
+          expect(salaryCtrl.nodeName.toLowerCase()).to.equal(OEUtils.TypeMappings.number.uiType);
+          done();
+        });
+        test('should generate oe-date for date type', function (done) {
+          var element = fixture('simple');
+          var dateCtrl = Polymer.dom(element.root).querySelector('[field-id=joiningDate]');
+          expect(dateCtrl).to.exist;
+          expect(dateCtrl.nodeName.toLowerCase()).to.equal(OEUtils.TypeMappings.date.uiType);
+          done();
+        });
+        test('should generate oe-checkbox for boolean type', function (done) {
+          var element = fixture('simple');
+          var booleanCtrl = Polymer.dom(element.root).querySelector('[field-id=bandApplicable]');
+          expect(booleanCtrl).to.exist;
+          expect(booleanCtrl.nodeName.toLowerCase()).to.equal(OEUtils.TypeMappings.boolean.uiType);
+          done();
+        });
+        test('label is derrived from field-id', function (done) {
+          var element = fixture('simple');
+          var ctrl = Polymer.dom(element.root).querySelector('[field-id=lastName]');
+          expect(ctrl).to.exist;
+          expect(ctrl.label).to.equal('Last Name');
+          done();
+        });
+
+        test('label in fields array overrides fault label', function (done) {
+          var element = fixture('simple');
+          var ctrl = Polymer.dom(element.root).querySelector('[field-id=firstName]');
+          expect(ctrl).to.exist;
+          expect(ctrl.label).to.equal('Employee First Name');
+          done();
+        });
+
+        test('oe-field tag is converted to actual control', function (done) {
+          var element = fixture('simple');
+          var empIdCtrl = Polymer.dom(element.root).querySelector('[field-id=empId]');
+          expect(empIdCtrl).to.exist;
+          expect(empIdCtrl.nodeName.toLowerCase()).to.equal(OEUtils.TypeMappings.string.uiType);
+          //make sure it is not the auto-generated one.
+          expect(empIdCtrl.parentElement.getAttribute('id')).to.equal('main');
+          expect(Polymer.dom(element.root).querySelector('oe-field')).to.not.exist;
+          done();
+        });
+        test('oe-field conversion sets typemapping attributes', function (done) {
+          var element = fixture('simple');
+          var empIdCtrl = Polymer.dom(element.root).querySelector('[field-id=empId]');
+          expect(empIdCtrl).to.exist;
+          expect(empIdCtrl.getAttribute('data-txt-attribute')).to.equal('some-value');
+          expect(empIdCtrl.getAttribute('data-obj-attribute')).to.deep.equal('{"x":1}');
+          //make sure it is not the auto-generated one.
+          expect(empIdCtrl.parentElement.getAttribute('id')).to.equal('main');
+          done();
+        });
+
+        test('oe-fields tag is converted to actual control', function (done) {
+          var element = fixture('simple');
+          var ctrl = Polymer.dom(element.root).querySelector('[field-id=priorExp]');
+          expect(ctrl).to.exist;
+          expect(ctrl.nodeName.toLowerCase()).to.equal(OEUtils.TypeMappings.number.uiType);
+          //make sure it is not the auto-generated one.
+          expect(ctrl.parentElement.getAttribute('id')).to.equal('main');
+          ctrl = Polymer.dom(element.root).querySelector('[field-id=skills]');
+          expect(ctrl).to.exist;
+          expect(ctrl.nodeName.toLowerCase()).to.equal(OEUtils.TypeMappings.tags.uiType);
+          //make sure it is not the auto-generated one.
+          expect(ctrl.parentElement.getAttribute('id')).to.equal('main');
+          expect(Polymer.dom(element.root).querySelector('oe-fields')).to.not.exist;
+          done();
+        });
+
+        test('unique=true adds async validator', function (done) {
+          var element = fixture('simple');
+          var ctrl = Polymer.dom(element.root).querySelector('oe-async-validator[error=empId-not-unique]');
+          expect(ctrl).to.exist;
+          expect(ctrl.ensure).to.equal('absent');
+          expect(ctrl.requesturl).to.exist;
+          expect(ctrl.fields).to.exist;
+          expect(ctrl.fields.length).to.equal(1);
+          expect(ctrl.fields).to.contain('empId');
+          done();
+        });
+
+        test('in=[a,b,c] adds combination validator', function (done) {
+          var element = fixture('simple');
+          var ctrl = Polymer.dom(element.root).querySelector(
+            'oe-combination-validator[error=category-invalid-value]');
+          expect(ctrl).to.exist;
+          expect(ctrl.ensure).to.equal('present');
+          expect(ctrl.fields).to.exist;
+          expect(ctrl.fields.length).to.equal(1);
+          expect(ctrl.fields).to.contain('category');
+          expect(ctrl.combinations).to.deep.equal(masterMetadata.metadata.properties.category.in);
+          done();
+        });
+
+        test('Attributes specified in fields array are set on control', function (done) {
+          var element = fixture('simple');
+          var ctrl = Polymer.dom(element.root).querySelector('[field-id=firstName]');
+          expect(ctrl).to.exist;
+          expect(ctrl.nodeName.toLowerCase()).to.equal(OEUtils.TypeMappings.string.uiType);
+          expect(ctrl.label).to.equal(masterMetadata.fields[0].label);
+          expect(ctrl.fieldId).to.equal(masterMetadata.fields[0].fieldId);
+          expect(ctrl.parentElement.getAttribute('id')).to.equal('main');
+          done();
+        });
+
+        test('String element in fields is treated as field-id and goes to default container', function (done) {
+          var element = fixture('simple');
+          var ctrl = Polymer.dom(element.root).querySelector('[field-id=salary]');
+          expect(ctrl).to.exist;
+          expect(ctrl.nodeName.toLowerCase()).to.equal(OEUtils.TypeMappings.number.uiType);
+          expect(ctrl.fieldId).to.equal(masterMetadata.fields[2]);
+          expect(ctrl.parentElement.getAttribute('id')).to.equal('fields');
+          done();
+        });
+        test('Excluded fields are not added to form', function (done) {
+          var element = fixture('simple');
+          var ctrl = Polymer.dom(element.root).querySelector('[field-id=comments]');
+          expect(ctrl).to.not.exist;
+          done();
+        });
+
+        test('handwritten control : typemapping attributes are set', function (done) {
+          var element = fixture('simple');
+          var ctrl = Polymer.dom(element.root).querySelector('[field-id=skills]');
+          expect(ctrl).to.exist;
+          expect(ctrl.getAttribute('data-txt-attribute')).to.equal('some-value');
+          //make sure it is not the auto-generated one.
+          expect(ctrl.parentElement.getAttribute('id')).to.equal('main');
+          done();
+        });
+
+        //              test('handwritten control : field attributes override type-mapping attributes', function(done) {
+        //                        var element = fixture('simple');
+        //                        var ctrl = Polymer.dom(element.root).querySelector('[field-id=skills]');
+        //                        expect(ctrl).to.exist;
+        //                        expect(ctrl.getAttribute('data-obj-attribute')).to.equal('{"y":"test"}');
+        //                        //make sure it is not the auto-generated one.
+        //                        expect(ctrl.parentElement.getAttribute('id')).to.equal('main');
+        //                        done();
+        //                    });
+
+        test('Elements personalizations are applied', function (done) {
+          var element = fixture('simple');
+          var ctrl = Polymer.dom(element.root).querySelector('[field-id=dateOfBirth]');
+          expect(ctrl).to.exist;
+          expect(ctrl.format).to.equal('DD-MM-YYYY');
+          done();
+        });
+      });
+
+      suite('containers', function () {
+        test('fields are added to respective containers', function (done) {
+          var element = fixture('simple');
+          var ctrl = Polymer.dom(element.root).querySelector('[field-id=firstName]');
+          expect(ctrl).to.exist;
+          expect(ctrl.nodeName.toLowerCase()).to.equal(OEUtils.TypeMappings.string.uiType);
+          //make sure it is not the auto-generated one.
+          expect(ctrl.parentElement.getAttribute('id')).to.equal('main');
+          done();
+        });
+
+        test('missing containers should be added', function (done) {
+          var element = fixture('simple');
+          var ctrl = Polymer.dom(element.root).querySelector('[field-id=category]');
+          expect(ctrl).to.exist;
+          //make sure it is not the auto-generated one.
+          expect(ctrl.parentElement.getAttribute('id')).to.equal('missing');
+          done();
+        });
+
+        test('when some containers are present in template, they should not be added again', function (done) {
+          var element = fixture('simple');
+          var containers = element.querySelectorAll('[id=main]');
+          expect(containers).to.exist;
+          expect(containers.length).to.equal(1);
+          done();
+        });
+
+        test('content: Controls specified in content are created', function (done) {
+
+          var element = fixture('simple');
+          var ctrl = Polymer.dom(element.root).querySelector('[field-id=revisionDates]');
+          expect(ctrl).to.exist;
+          expect(ctrl.getAttribute('data-content')).to.equal('true');
+          done();
+        });
+        test('content: controls without oe-container are created in default container', function (done) {
+          var element = fixture('simple');
+          var ctrl = Polymer.dom(element.root).querySelector('[field-id=revisionDates]');
+          expect(ctrl).to.exist;
+          expect(ctrl.parentElement.getAttribute('id')).to.equal('fields');
+          done();
+        });
+        test('content: controls with oe-container are created in appropriate container', function (done) {
+          var element = fixture('simple');
+          var ctrl = Polymer.dom(element.root).querySelector('[field-id=dateOfBirth]');
+          expect(ctrl).to.exist;
+          expect(ctrl.parentElement.getAttribute('id')).to.equal('main');
+          done();
+        });
+        test('content: missing oe-container is created', function (done) {
+          var element = fixture('simple');
+          var ctrl = Polymer.dom(element.root).querySelector('[field-id=rankings]');
+          expect(ctrl).to.exist;
+          expect(ctrl.parentElement.getAttribute('id')).to.equal('another');
+          done();
+        });
+      });
+
+      suite('expressions', function () {
+
+        test('do NOT add computed bindings when property values are specified without expression', function (
+          done) {
+          var component = fixture('simple');
+          expect(component._dateOfBirth_required).to.not.exist;
+          expect(component._lastName_disabled).to.not.exist;
+          expect(component._salary_precision).to.not.exist;
+          expect(component._bandApplicable_class).to.not.exist;
+          done();
+        });
+
+        test('required - translates into computed bindings with appropriate number of arguments', function (
+          done) {
+
+          //Expression is
+          //dateOfBirth.required = '{{firstName}} && {{firstName}}.length>0 && {{lastName}} && {{lastName}}.length>0'
+
+          var component = fixture('expressions');
+
+          expect(component._dateOfBirth_required).to.exist;
+          expect(typeof component._dateOfBirth_required).to.equal('function');
+          expect(component._dateOfBirth_required.length).to.equal(2);
+          done();
+        });
+
+        test('disabled - translates into computed bindings with appropriate number of arguments', function (
+          done) {
+          var component = fixture('expressions');
+          expect(component._lastName_disabled).to.exist;
+          expect(typeof component._lastName_disabled).to.equal('function');
+          expect(component._lastName_disabled.length).to.equal(1);
+          done();
+        });
+
+        test('precision - translates into computed bindings with appropriate number of arguments', function (
+          done) {
+          var component = fixture('expressions');
+          expect(component._salary_precision).to.exist;
+          expect(typeof component._salary_precision).to.equal('function');
+          expect(component._salary_precision.length).to.equal(1);
+          done();
+        });
+
+        test('class - translates into computed bindings with appropriate number of arguments', function (done) {
+          var component = fixture('expressions');
+          expect(component._bandApplicable_class).to.exist;
+          expect(typeof component._bandApplicable_class).to.equal('function');
+          expect(component._bandApplicable_class.length).to.equal(1);
+          done();
+        });
+
+        test('value - translates into computed bindings with appropriate number of arguments', function (done) {
+          var component = fixture('expressions');
+          expect(component._pf_value).to.exist;
+          expect(typeof component._pf_value).to.equal('function');
+          expect(component._pf_value.length).to.equal(1);
+          done();
+        });
+
+        test('defined function binding', function (done) {
+          var component = fixture('expressions');
+          var control = component.querySelector('[field-id=firstName]'); //eslint-disable-line no-unused-vars
+          expect(component._firstName_class).to.not.exist;
+          //?? How to test if binding is proper?
+          done();
+        });
+
+      });
+
+      suite('model data', function () {
+
+        test('component has defaultVM property set', function (done) {
+          var component = fixture('simple');
+          expect(component.defaultVM).to.exist;
+          expect(typeof component.defaultVM).to.equal('object');
+          expect(component.defaultVM).to.deep.equal(masterMetadata.defaultVM);
+          done();
+        });
+
+        test('component has view-model property set', function (done) {
+          var component = fixture('simple');
+          expect(component.employee).to.exist;
+          expect(typeof component.employee).to.equal('object');
+          expect(component.employee).to.not.equal(component.defaultVM);
+          expect(component.employee).to.deep.equal(component.defaultVM);
+          done();
+        });
+      });
+
+      /*
+            suite('actions', function () {
+
+              test('new button resets the vm', function (done) {
+                var element = fixture('actions');
+
+                element.addEventListener('lazy-component-ready', function (evt) {
+                  expect(evt.detail).to.exist;
+                  expect(evt.detail.name).to.equal('oe-form-actions-xhtmlactions');
+
+
+                  var component = element.$.metadiv.querySelector(evt.detail.name);
+                  component.vm = {
+                    xxx: 4,
+                    yyy: 5
+                  };
+                  expect(component.vm).to.deep.not.equal(component.defaultVM);
+                  var btn = component.querySelector("#new");
+                  MockInteractions.tap(btn);
+                  Polymer.Base.async(function () {
+                    expect(component.vm).to.deep.equal(component.defaultVM);
+                    done();
+                  }, 200);
+                });
+              });
+
+              test('save button saves the data', function (done) {
+                var element = fixture('actions');
+
+                element.addEventListener('lazy-component-ready', function (evt) {
+                  expect(evt.detail).to.exist;
+                  expect(evt.detail.name).to.equal('oe-form-actions-xhtmlactions');
+
+                  var component = element.$.metadiv.querySelector(evt.detail.name);
+                  component.vm = {
+                    firstName: 'Tomohaki',
+                    lastName: 'Yamaguchi',
+                    dateOfBirth: new Date(1968, 4, 13),
+                    bandApplicable: true,
+                    salary: 4342434,
+                    pf: 9000192,
+                  };
+                  var btn = component.querySelector("#save");
+                  MockInteractions.tap(btn);
+                  component.addEventListener('oe-formdata-inserted', function (e) {
+                    expect(component.vm.id).to.exist;
+                    expect(component.vm._version).to.equal(1);
+                    done();
+                  });
+                });
+              });
+
+              test('copy button clears the id and _version from vm', function (done) {
+                var element = fixture('actions');
+
+                element.set('key', 3);
+
+                element.addEventListener('lazy-component-ready', function (evt) {
+                  expect(evt.detail).to.exist;
+                  expect(evt.detail.name).to.equal('oe-form-actions-xhtmlactions');
+
+                  var component = element.$.metadiv.querySelector(evt.detail.name);
+                  component.addEventListener('oe-formdata-loaded', function (e) {
+                    //console.log(component.vm);
+                    expect(component.vm.id).to.equal(3);
+                    expect(component.vm._version).to.equal(1);
+
+
+                    var btn = component.querySelector("#copy");
+                    MockInteractions.tap(btn);
+                    //component.addEventListener('oe-formdata-copied', function (e) {
+                    expect(component.vm.id).to.not.exist;
+                    expect(component.vm._version).to.not.exist;
+                    done();
+                    //});
+                  });
+
+                });
+              });
+
+
+              test('delete button deletes the data', function (done) {
+                var element = fixture('actions');
+
+                element.addEventListener('lazy-component-ready', function (evt) {
+                  expect(evt.detail).to.exist;
+                  expect(evt.detail.name).to.equal('oe-form-actions-xhtmlactions');
+
+                  var component = element.$.metadiv.querySelector(evt.detail.name);
+                  component.vm = restdata.employees[0];
+                  var btn = component.querySelector("#delete");
+                  MockInteractions.tap(btn);
+                  component.addEventListener('oe-formdata-deleted', function (e) {
+                    expect(component.vm.id).to.exist;
+                    expect(component.vm._version).to.equal(1);
+                    done();
+                  });
+
+                });
+              });
+
+              test('request-response button fetches additional data', function (done) {
+                var element = fixture('actions');
+
+                element.addEventListener('lazy-component-ready', function (evt) {
+                  expect(evt.detail).to.exist;
+                  expect(evt.detail.name).to.equal('oe-form-actions-xhtmlactions');
+
+
+                  restdata.employees[0].projectId = restdata.projects[1].id;
+                  var component = element.$.metadiv.querySelector(evt.detail.name);
+                  component.vm = restdata.employees[0];
+
+                  expect(component.project).to.not.exist;
+                  var btn = component.querySelector("#requestresponse");
+                  btn.setAttribute('request-url', '/projects/' + restdata.projects[1].id);
+                  btn.setAttribute('response-to', 'project');
+                  btn.setAttribute('http-type', 'GET');
+
+                  component.addEventListener('oe-ajax-action-completed', function (e) {
+                    expect(component.project).to.exist;
+                    expect(component.project).to.deep.equal(restdata.projects[1]);
+                    done();
+                  });
+                  MockInteractions.tap(btn);
+
+                });
+              });
+
+              test('setting modelId fetches data', function (done) {
+                var element = fixture('actions');
+                element.set('key', 3);
+
+                element.addEventListener('lazy-component-ready', function (evt) {
+                  expect(evt.detail).to.exist;
+                  expect(evt.detail.name).to.equal('oe-form-actions-xhtmlactions');
+
+                  var component = element.$.metadiv.querySelector(evt.detail.name);
+                  component.addEventListener('oe-formdata-loaded', function (e) {
+                    //console.log(component.vm);
+                    expect(component.vm.id).to.equal(3);
+                    expect(component.vm._version).to.equal(1);
+                    done();
+                  });
+
+                });
+              });
+
+              test('setting querystring fetches data', function (done) {
+                var element = fixture('actions');
+                //element.set('querystring', 'firstName=Angela&salary=1&salary=2');
+
+                element.addEventListener('lazy-component-ready', function (evt) {
+                  expect(evt.detail).to.exist;
+                  expect(evt.detail.name).to.equal('oe-form-actions-xhtmlactions');
+
+                  var component = element.$.metadiv.querySelector(evt.detail.name);
+
+                  component.addEventListener('oe-formdata-loaded', function (e) {
+                    //Fake-Rest not able to parse Loopback type query-string.
+                    // So it is returning eveything. We can not check on VM as it is set to [{...},...] now.
+                    expect(e.detail).to.exist;
+                    expect(component.vm).to.exist;
+
+                    //element->generated_component oneway
+                    expect(element.model).to.exist;
+                    done();
+                  });
+                  component.includes = "A,B"; //doesn't matter. Just code-coverage in query formation
+                  element.set('querystring', 'firstName=Angela&salary=1&salary=2');
+                });
+              });
+
+              test('setting modelId to invalid key, shows the error', function (done) {
+                var element = fixture('actions');
+                element.set('key', 99);
+
+                element.addEventListener('lazy-component-ready', function (evt) {
+                  expect(evt.detail).to.exist;
+                  expect(evt.detail.name).to.equal('oe-form-actions-xhtmlactions');
+
+                  var component = element.$.metadiv.querySelector(evt.detail.name);
+                  component.addEventListener('oe-show-error', function (e) {
+                    done();
+                  });
+
+                });
+              });
+
+              test('fetchlist fetches records', function (done) {
+                var element = fixture('actions');
+                element.addEventListener('lazy-component-ready', function (evt) {
+                  expect(evt.detail).to.exist;
+                  expect(evt.detail.name).to.equal('oe-form-actions-xhtmlactions');
+
+                  var component = element.$.metadiv.querySelector(evt.detail.name);
+                  component.fetchList(function (data) {
+                    expect(data).to.exist;
+                    expect(data.length).to.equal(3);
+                    done();
+                  });
+                });
+              });
+
+              test('workflow approve button sends the approve request', function (done) {
+                var element = fixture('actions');
+
+                element.addEventListener('lazy-component-ready', function (evt) {
+                  expect(evt.detail).to.exist;
+                  expect(evt.detail.name).to.equal('oe-form-actions-xhtmlactions');
+
+                  var component = element.$.metadiv.querySelector(evt.detail.name);
+                  component.vm = restdata.employees[0];
+                  var btn = component.querySelector("#workflow");
+                  MockInteractions.tap(btn);
+                  component.addEventListener('oe-workflow-action-completed', function (e) {
+                    //local fake server is setting up status:'__completed__' on workflow action.
+                    expect(e.detail.status).to.equal('__completed__');
+                    done();
+                  });
+                });
+              });
+
+            });
+      */
+      suite('validations', function () {
+
+        test('generated form has validation elements', function (done) {
+          var element = fixture('simple');
+          for (var i = 0; i < masterMetadata.oeValidations.length; i++) {
+            var validation = masterMetadata.oeValidations[i];
+            var validator = Polymer.dom(element.root).querySelector(validation.type);
+            expect(validator).to.exist;
+            expect(validator.validate).to.be.a.function;
+          }
+          done();
+        });
+
+        test('eq-validator triggers error', function (done) {
+          var component = fixture('simple');
+
+          component.employee = {
+            empId: 1,
+            totalExp: 10,
+            priorExp: 5,
+            category: 'L1',
+            firstName: 'Tomohaki',
+            lastName: 'Yamaguchi',
+            dateOfBirth: new Date(1968, 4, 13),
+            joiningDate: new Date(1998, 5, 18),
+            bandApplicable: false,
+            salary: 4342434,
+            projectId: 1001,
+            //error
+            pf: 9000192,
+            //error
+            reenter_pf: 12
+          };
+          expect(component.errors).to.be.empty;
+          var btn = component.querySelector('#save');
+          component.addEventListener('oe-show-error', function (e) { //eslint-disable-line no-unused-vars
+            expect(component.errors).to.not.be.empty;
+            var eqValidatorError = component.errors.find(function (err) {
+              return err.validator && err.validator.localName === 'oe-eq-validator';
+            });
+            expect(eqValidatorError).to.exist;
+            done();
+          });
+          MockInteractions.tap(btn);
+        });
+
+        test('ne-validator triggers error', function (done) {
+          var component = fixture('simple');
+
+          component.employee = {
+            empId: 1,
+            firstName: 'Yamaguchi',
+            lastName: 'Yamaguchi',
+            dateOfBirth: new Date(1968, 4, 13),
+            joiningDate: new Date(1998, 5, 18),
+            bandApplicable: true,
+            projectId: 1001,
+            salary: 4342434,
+            pf: 9000192,
+            reenter_pf: 9000192
+          };
+          expect(component.errors).to.be.empty;
+          var btn = component.querySelector('#save');
+          component.addEventListener('oe-show-error', function (e) { //eslint-disable-line no-unused-vars
+            expect(component.errors).to.not.be.empty;
+            var neValidatorError = component.errors.find(function (err) {
+              return err.validator && err.validator.localName === 'oe-ne-validator';
+            });
+            expect(neValidatorError).to.exist;
+            done();
+          });
+          MockInteractions.tap(btn);
+        });
+
+        test('lt-validator triggers error', function (done) {
+          var component = fixture('simple');
+          component.employee = {
+            empId: 1,
+            firstName: 'Tomohaki',
+            lastName: 'Yamaguchi',
+            //error
+            dateOfBirth: new Date(1968, 4, 13),
+            //error
+            joiningDate: new Date(1968, 4, 13),
+            bandApplicable: false,
+            totalExp: 10,
+            priorExp: 5,
+            projectId: 1001,
+            salary: 4342434,
+            pf: 9000192,
+            reenter_pf: 9000192
+          };
+          expect(component.errors).to.be.empty;
+          var btn = component.querySelector('#save');
+          component.addEventListener('oe-show-error', function (e) { //eslint-disable-line no-unused-vars
+            expect(component.errors).to.not.be.empty;
+            var validatorCtrl = component.errors.find(function (err) {
+              return err.validator && err.validator.localName === 'oe-lt-validator';
+            });
+            expect(validatorCtrl).to.exist;
+            done();
+          });
+          MockInteractions.tap(btn);
+        });
+
+        test('le-validator triggers error', function (done) {
+          var component = fixture('simple');
+          component.employee = {
+            empId: 1,
+            firstName: 'Tomohaki',
+            lastName: 'Yamaguchi',
+            dateOfBirth: new Date(1968, 4, 13),
+            joiningDate: new Date(1998, 5, 18),
+            bandApplicable: true,
+            projectId: 1001,
+            salary: 4342434,
+            //error
+            totalExp: 5,
+            //error
+            priorExp: 10,
+            pf: 9000192,
+            reenter_pf: 9000192
+          };
+          expect(component.errors).to.be.empty;
+          var btn = component.querySelector('#save');
+          component.addEventListener('oe-show-error', function (e) { //eslint-disable-line no-unused-vars
+            expect(component.errors).to.not.be.empty;
+            var validatorCtrl = component.errors.find(function (err) {
+              return err.validator && err.validator.localName === 'oe-le-validator';
+            });
+            expect(validatorCtrl).to.exist;
+            done();
+          });
+          MockInteractions.tap(btn);
+        });
+
+        test('expression-validator triggers error', function (done) {
+          var component = fixture('simple');
+          component.employee = {
+            empId: 1,
+            firstName: 'Tomohaki',
+            // error >6
+            lastName: 'Yamagu',
+            dateOfBirth: new Date(1968, 4, 13),
+            joiningDate: new Date(1998, 5, 18),
+            bandApplicable: true,
+            projectId: 1001,
+            salary: 4342434,
+            totalExp: 10,
+            priorExp: 5,
+            pf: 9000192,
+            reenter_pf: 9000192
+          };
+          expect(component.errors).to.be.empty;
+          var btn = component.querySelector('#save');
+          component.addEventListener('oe-show-error', function (e) { //eslint-disable-line no-unused-vars
+            expect(component.errors).to.not.be.empty;
+            var validatorCtrl = component.errors.find(function (err) {
+              return err.validator && err.validator.localName === 'oe-expression-validator';
+            });
+            expect(validatorCtrl).to.exist;
+            done();
+          });
+          MockInteractions.tap(btn);
+        });
+
+        test('combination-validator triggers error', function (done) {
+          var component = fixture('simple');
+          component.employee = {
+            empId: 1,
+            firstName: 'Tomohaki',
+            lastName: 'Yamaguchi',
+            dateOfBirth: new Date(1968, 4, 13),
+            joiningDate: new Date(1998, 5, 18),
+            //should be true or experience checks for false
+            bandApplicable: false,
+            projectId: 1001,
+            salary: 4342434,
+            //error should be 10
+            totalExp: 11,
+            //error should be 5
+            priorExp: 5,
+            pf: 9000192,
+            reenter_pf: 9000192
+          };
+          expect(component.errors).to.be.empty;
+          var btn = component.querySelector('#save');
+          component.addEventListener('oe-show-error', function (e) { //eslint-disable-line no-unused-vars
+            expect(component.errors).to.not.be.empty;
+            var validatorCtrl = component.errors.find(function (err) {
+              return err.validator && err.validator.localName === 'oe-combination-validator';
+            });
+            expect(validatorCtrl).to.exist;
+            done();
+          });
+          MockInteractions.tap(btn);
+        });
+
+        //     test('async-validator triggers error', function (done) {
+        //       var component = fixture('simple');
+        //       component.employee = {
+        //         empId: 1,
+        //         firstName: 'Tomohaki',
+        //         lastName: 'Yamaguchi',
+        //         dateOfBirth: new Date(1968, 4, 13),
+        //         joiningDate: new Date(1998, 5, 18),
+        //         bandApplicable: false,
+        //         totalExp: 10,
+        //         priorExp: 5,
+        //         salary: 4342434,
+        //         pf: 9000192,
+        //         reenter_pf: 9000192,
+        //         projectId: 9999 //error - no such project Id
+        //       };
+        //       expect(component.errors).to.be.empty;
+        //       component.validateForm().then(function (s) {
+
+        //         Polymer.Base.async(function () {
+        //           console.log(component.errors);
+        //           expect(component.errors).to.not.be.empty;
+        //           var validatorCtrl = component.errors.find(function (err) {
+        //             return err.validator && err.validator.localName === 'oe-async-validator';
+        //           });
+        //           expect(validatorCtrl).to.exist;
+        //           done();
+        //         }, 500);
+        //       });
+
+        //       //component.addEventListener('oe-show-error', function (e) {
+        //       Polymer.Base.async(function () {
+        //         expect(component.errors).to.not.be.empty;
+        //         expect(component.errors[0].validator.localName).to.equal('oe-async-validator');
+        //         done();
+        //       }, 500);
+        //     });
+        //   });
+        // });
+
+        test('Infield validation failure cause errors', function (done) {
+          var component = fixture('simple');
+          expect(component.errors).to.be.empty;
+          var input = component.querySelector('[field-id=totalExp]');
+          input.inputElement.set('value', 'foobar');
+          input.inputElement.fire('change');
+          forceXIfStamp(input);
+
+          expect(component.errors).to.not.be.empty;
+          expect(component.errors[0].validator).to.equal(input);
+
+          done();
+        });
+        test('resetting VM clears errors', function (done) {
+          var component = fixture('simple');
+          component.employee = {
+            firstName: 'Tomohaki',
+            lastName: 'Yamaguchi',
+            dateOfBirth: new Date(1968, 4, 13),
+            joiningDate: new Date(1998, 5, 18),
+            bandApplicable: true,
+            totalExp: 10,
+            priorExp: 5,
+            salary: 4342434,
+            projectId: 1001,
+            //error
+            pf: 9000192,
+            //error
+            reenter_pf: 12
+          };
+          expect(component.errors).to.be.empty;
+
+          component.validateForm().then(function (state) { //eslint-disable-line no-unused-vars
+            expect(component.errors).to.not.be.empty;
+
+            component.set('employee', {});
+
+            expect(component.errors).to.be.empty;
+            done();
+          });
+        });
+      });
+    });
+
+  </script>
+
+
+</body>
+
+</html>

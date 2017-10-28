@@ -1,0 +1,139 @@
+<!--
+  ©2016-2017 EdgeVerve Systems Limited (a fully owned Infosys subsidiary),
+  Bangalore, India. All Rights Reserved.
+-->
+
+<dom-module id="lazy-component">
+
+  <template>
+    <div></div>
+  </template>
+
+  <script>
+    Polymer({
+      is: 'lazy-component',
+      properties: {
+        url: {
+          type: 'string',
+          observer: '_setUrl'
+        },
+        model: {
+          type: 'object',
+          notify: true,
+          value: function () {
+            return {};
+          }
+        },
+        emitOnSave: {
+          type: 'string',
+          observer: '_emitOnSaveChanged'
+        },
+        auto: {
+          type: 'boolean',
+          value: false
+        }
+      },
+      observers: [
+        'modelChanged(model.*)'
+      ],
+      _setUrl: function (newUrl, oldUrl) { // eslint-disable-line no-unused-vars
+        if (this.url) {
+          this.initialised = false;
+          this._loadElement();
+        }
+      },
+      created: function () {
+        this.refreshing = false;
+      },
+      modelChanged: function (changed) {
+        var self = this;
+        if (!this.refreshing && this.element) {
+          self.refreshing = true;
+          if (changed.path) {
+            var field = changed.path.replace('model', this._modelName);
+            this.element.set(field, changed.value);
+          } else {
+            this.element.set(this._modelName, changed.value);
+          }
+          self.refreshing = false;
+        }
+      },
+      _emitOnSaveChanged: function (oldVal, newVal) { // eslint-disable-line no-unused-vars
+        if (this.element) {
+          this.element.set('emitOnSave', this.emitOnSave);
+        }
+      },
+      _registerEvent: function (el) {
+        var self = this;
+        var modelName = el.modelAlias || 'vm';
+        el.addEventListener(modelName + '-changed', function (changed) {
+          if (!self.refreshing) {
+            self.refreshing = true;
+            if (changed.detail.path) {
+              var field = changed.detail.path;
+              field = field.replace(modelName, 'model');
+              self.set(field, changed.detail.value);
+            } else {
+              self.model = {};
+              self.set('model', changed.detail.value);
+            }
+            self.refreshing = false;
+          }
+        });
+      },
+      _loadElement: function () {
+        var self = this;
+        if (!self.url) {
+          return;
+        }
+        if (self.initialised) {
+          return;
+        }
+        self.initialised = true;
+        self.importHref(self.url, function (e) {
+          self.loaded = false;
+          var domModule = e.target.import.querySelector('dom-module');
+          var el = document.createElement(domModule.id);
+          if (el.set) {
+            self.element = el;
+            self._modelName = el.modelAlias || 'vm';
+            el.set(self._modelName, self.model);
+            if (self.emitOnSave) {
+              el.set('emitOnSave', self.emitOnSave);
+            }
+            self._registerEvent(el);
+          } else {
+            el.addEventListener('meta-attached', function () {
+              self.element = el;
+              self._modelName = el.modelAlias || 'vm';
+              el.set(self._modelName, self.model);
+              self._registerEvent(el);
+            });
+          }
+
+          var pDom = Polymer.dom(self.root);
+
+          if (pDom.children.length) {
+            pDom.replaceChild(el, pDom.children[0]);
+          } else {
+            pDom.appendChild(el);
+          }
+        });
+      },
+      attached: function () {
+        this.refreshing = false;
+        if (this.auto) {
+          this._loadElement();
+        }
+      },
+      newRecord: function (overrideObj) {
+        var form = this.element;
+        var model = (form.defaultVM ? JSON.parse(JSON.stringify(form.defaultVM)) : {});
+        model = Object.assign(model, overrideObj);
+        this.set('model', model);
+      }
+    });
+
+  </script>
+
+</dom-module>

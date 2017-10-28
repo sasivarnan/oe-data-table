@@ -1,0 +1,26 @@
+{
+  "name": "oe-input-error",
+  "main": "oe-input-error.html",
+  "dependencies": {
+    "polymer": "Polymer/polymer#^1.4.0",
+    "paper-input": "^1.1.24",
+    "oe-i18n-msg": "^0.8.0"
+  },
+  "devDependencies": {
+    "iron-component-page": "PolymerElements/iron-component-page#^1.0.0",
+    "iron-demo-helpers": "PolymerElements/iron-demo-helpers#^1.0.0",
+    "web-component-tester": "^4.0.0",
+    "webcomponentsjs": "webcomponents/webcomponentsjs#^0.7.0"
+  },
+  "homepage": "https://github.com/EdgeVerve/oe-input-error",
+  "version": "0.9.1",
+  "_release": "0.9.1",
+  "_resolution": {
+    "type": "version",
+    "tag": "0.9.1",
+    "commit": "4a1653d88b617b4dad2c0152f9752bc07c796fc9"
+  },
+  "_source": "https://github.com/EdgeVerve/oe-input-error.git",
+  "_target": "^0.9.0",
+  "_originalSource": "oe-input-error"
+}

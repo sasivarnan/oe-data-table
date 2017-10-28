@@ -1,0 +1,451 @@
+<!-- 
+  ©2016-2017 EdgeVerve Systems Limited (a fully owned Infosys subsidiary),
+  Bangalore, India. All Rights Reserved.
+-->
+<link rel="import" href="../polymer/polymer.html">
+<link rel="import" href="../paper-menu/paper-menu.html">
+<link rel="import" href="../paper-item/paper-item.html">
+<link rel="import" href="../paper-input/paper-input-behavior.html">
+<link rel="import" href="../iron-dropdown/iron-dropdown.html">
+<link rel="import" href="../paper-material/paper-material.html">
+<link rel="import" href="../oe-input/oe-input.html">
+<link rel="import" href="../oe-ajax/oe-ajax.html">
+<link rel="import" href="../oe-field-behavior/oe-field-behavior.html">
+<link rel="import" href="../oe-i18n-msg/oe-i18n-msg.html">
+
+<!--
+
+@demo demo/demo-oe-typeahead.html
+-->
+<dom-module id="oe-typeahead">
+  <style>
+    :host {
+      display: block;
+    }
+
+    paper-menu {
+      max-height: 240px;
+      overflow: auto;
+    }
+
+    paper-item {
+      cursor: pointer;
+    }
+
+    .iron-selected {
+      background: var(--typeahead-selected-backgroud, #e0e0e0);
+    }
+
+    span.required {
+      vertical-align: bottom;
+      color: var(--paper-input-container-invalid-color, --paper-deep-orange-a700);
+    }
+
+    .dropdown-content > ::content paper-item {
+      --paper-item-selected: {
+        background-color: #ccc;
+      }
+    }
+
+  </style>
+  <template>
+    <oe-ajax id="iajax" auto url=[[_getRequestUrl(searchString)]] last-response={{_suggestions}} on-response="_onAjaxResponse"
+      on-error="_onAjaxError" debounce-duration={{debounceDuration}} handle-as="json" content-type="application/json"></oe-ajax>
+    <div style="position:relative;">
+      <paper-input-container no-label-float="[[noLabelFloat]]" always-float-label="[[_computeAlwaysFloatLabel(alwaysFloatLabel,placeholder)]]"
+        auto-validate$="[[autoValidate]]" disabled$="[[disabled]]" invalid="[[invalid]]">
+        <content select="[prefix]"></content>
+        <label hidden$="[[!label]]"><oe-i18n-msg msgid=[[label]]>[[label]]</oe-i18n-msg><template is="dom-if" if={{required}}><span class="required"> *</span></template></label>
+        <input is="iron-input" id="input" aria-labelledby$="[[_ariaLabelledBy]]" aria-describedby$="[[_ariaDescribedBy]]" disabled$="[[disabled]]"
+          bind-value="{{displayValue}}" invalid="{{invalid}}" prevent-invalid-input="[[preventInvalidInput]]" allowed-pattern="[[allowedPattern]]"
+          validator="[[validator]]" type$="[[type]]" pattern$="[[pattern]]" required$="[[required]]" autocomplete$="[[autocomplete]]"
+          autofocus$="[[autofocus]]" inputmode$="[[inputmode]]" minlength$="[[minlength]]" maxlength$="[[maxlength]]" min$="[[min]]"
+          max$="[[max]]" step$="[[step]]" name$="[[name]]" placeholder$="[[placeholder]]" readonly$="[[readonly]]" list$="[[list]]"
+          size$="[[size]]" autocapitalize$="[[autocapitalize]]" autocorrect$="[[autocorrect]]" tabindex$="[[tabindex]]" autosave$="[[autosave]]"
+          results$="[[results]]" accept$="[[accept]]" multiple$="[[multiple]]">
+        <content select="[suffix]"></content>
+        <oe-input-error invalid={{invalid}} placeholders={{errorPlaceholders}} error-message={{errorMessage}}></oe-input-error>
+        <template is="dom-if" if="[[charCounter]]">
+          <paper-input-char-counter></paper-input-char-counter>
+        </template>
+      </paper-input-container>
+      <div>
+        <iron-dropdown id="dropdown" no-auto-focus opened="{{_suggestions.length}}">
+          <paper-material class="dropdown-content">
+            <paper-menu id="menu">
+              <template is="dom-repeat" items="{{_suggestions}}" sort="sortData">
+                <paper-item on-mouseover="_onMouseOver" on-tap="_onPaperItemTap" data-item={{item}} data-index={{index}}>
+                  <template is="dom-if" if=[[!isValidTemplate]]>
+                    <span>{{_getDisplayValue(item)}}</span>
+                  </template>
+                  <template is="dom-if" if=[[isValidTemplate]]>
+                    <oe-meta-component metadata-name="{{metadataname}}" template-url="{{templateurl}}" model=[[item]]></oe-meta-component>
+                  </template>
+                </paper-item>
+              </template>
+            </paper-menu>
+          </paper-material>
+        </iron-dropdown>
+      </div>
+    </div>
+  </template>
+  <script>
+    Polymer({
+      is: 'oe-typeahead',
+      listeners: {
+        'input.focus': '_onFocus',
+        'input.keyup': '_onKeyUp',
+        'input.keydown': '_onKeyDown',
+        'input.input': '_onInput',
+        'input.blur': '_onBlur',
+        'input.change': '_onChange',
+        'pt-item-confirmed': 'validate'
+      },
+      _onBlur: function (e) { // eslint-disable-line no-unused-vars
+        if (!this._suggestions) {
+          this.validate();
+        }
+      },
+      _onFocus: function (e) { // eslint-disable-line no-unused-vars
+        this.inputElement.select();
+      },
+      _onChange: function (e) {
+        e.stopPropagation();
+      },
+
+      /**
+       * Returns a reference to the input element.
+       */
+      get inputElement() {
+        return this.$.input;
+      },
+      properties: {
+        errorMessage: {
+          type: String,
+          notify: true
+        },
+        displayValue: {
+          type: String
+        },
+        displayproperty: {
+          type: String
+        },
+        valueproperty: {
+          type: String
+        },
+        value: {
+          type: Object,
+          notify: true,
+          observer: '_fetchModel'
+        },
+        _suggestions: {
+          type: Array,
+          observer: '_suggestionsChanged'
+        },
+        selectedItem: {
+          type: Object,
+          notify: true
+        },
+        debounceDuration: {
+          type: Number,
+          value: 300
+        },
+        searchString: {
+          type: String,
+          notify: true
+        },
+        searchurl: {
+          type: String
+        },
+        dataurl: {
+          type: String,
+          observer: '_fetchModel'
+        },
+        disabled: {
+          type: Boolean,
+          notify: true
+        },
+        required: {
+          type: Boolean,
+          notify: true
+        },
+        templateurl: {
+          type: String,
+          observer: '_templateUrlChanged'
+        },
+        strict: {
+          type: Boolean,
+          value: false
+        },
+        noDataFound: {
+          type: Boolean,
+          notify: true,
+          value: false
+        },
+        isValidTemplate: {
+          type: Boolean,
+          value: false
+        }
+      },
+      behaviors: [
+        Polymer.PaperInputBehavior,
+        OEUtils.FieldBehavior
+      ],
+      _onAjaxResponse: function (e) {
+        var self = this;
+        if (!e.detail.response || e.detail.response.length == 0) {
+          if (self.strict) {
+            self.setValidity(false, 'no-matching-records');
+          } else {
+            var newValue = self.displayValue;
+            if (self.valueproperty || self.displayproperty) {
+              newValue = {};
+              if (self.valueproperty) {
+                newValue[self.valueproperty] = self.displayValue;
+              }
+              if (self.displayproperty) {
+                newValue[self.displayproperty] = self.displayValue;
+              }
+            }
+            self._setSelectedItem(newValue);
+          }
+          self.noDataFound = true;
+
+        } else {
+          self.noDataFound = false;
+        }
+      },
+      _onAjaxError: function (e) { // eslint-disable-line no-unused-vars
+        var self = this;
+        self.noDataFound = true;
+        if (self.strict) {
+          self.setValidity(false, 'no-matching-records');
+        } else {
+          var newValue = self.displayValue;
+          if (self.valueproperty || self.displayproperty) {
+            newValue = {};
+            if (self.valueproperty) {
+              newValue[self.valueproperty] = self.displayValue;
+            }
+            if (self.displayproperty) {
+              newValue[self.displayproperty] = self.displayValue;
+            }
+          }
+          self._setSelectedItem(newValue);
+        }
+      },
+      _onKeyUp: function (e) {
+
+        var keycode = e.keyCode || e.which || e.key;
+
+        if (keycode == 40) {
+          //down button
+          var suggestionsMenu = this.$.menu;
+          if (suggestionsMenu) {
+            var selectedItem = suggestionsMenu.focusedItem;
+            var index = 0;
+            if (typeof (selectedItem) != 'undefined') {
+              index = Number(suggestionsMenu.indexOf(selectedItem));
+              index = Math.min(index + 1, this._suggestions.length - 1);
+            }
+            suggestionsMenu.select(index);
+          }
+          this.inputElement.focus();
+        } else if (keycode == 38) {
+          //up
+          var suggestionsMenu = this.$.menu; // eslint-disable-line no-redeclare
+          if (suggestionsMenu) {
+            var selectedItem = suggestionsMenu.focusedItem; // eslint-disable-line no-redeclare
+            if (typeof (selectedItem) != 'undefined') {
+              index = Number(suggestionsMenu.indexOf(selectedItem));
+              index = Math.max(index - 1, -1);
+              suggestionsMenu.select(index);
+            }
+          }
+          this.inputElement.focus();
+        } else if (keycode == 13) {
+          var suggestionsMenu = this.$.menu; // eslint-disable-line no-redeclare
+          if (suggestionsMenu && typeof (suggestionsMenu) != 'undefined') {
+            var selectedItem = suggestionsMenu.focusedItem; // eslint-disable-line no-redeclare
+            if (typeof (selectedItem) != 'undefined') {
+              this._setSelectedItem(selectedItem.dataItem);
+              this.fire('pt-item-confirmed', selectedItem.dataItem);
+              this.async(function () {
+                this.fire('change');
+              });
+            }
+          }
+        }
+        // else if (keycode != 9) { /* do NOT trigger a search on tab-in */
+
+        //     var suggestionsMenu = Polymer.dom(this.root).querySelector('paper-menu');
+        //     if (suggestionsMenu && typeof (suggestionsMenu) != 'undefined') {
+        //         suggestionsMenu.select(-1);
+        //     }
+        //     this._onInput(this.displayValue.trim());
+        // }
+      },
+      _onKeyDown: function (e) {
+        var keycode = e.keyCode || e.which || e.key;
+        if (keycode == 40 || keycode == 38) {
+          e.preventDefault();
+          e.stopPropagation();
+        } else if (e.keyCode == 13 && this._suggestions.length) {
+          e.stopPropagation();
+        }
+      },
+      _onMouseOver: function (e) {
+        var suggestionsMenu = Polymer.dom(this.root).querySelector('paper-menu');
+        if (suggestionsMenu && typeof (suggestionsMenu) != 'undefined') {
+          suggestionsMenu.select(e.currentTarget.dataIndex);
+          this.inputElement.focus();
+        }
+      },
+      _onPaperItemTap: function (e) {
+        this._setSelectedItem(e.currentTarget.dataItem);
+        this.fire('pt-item-confirmed', e.currentTarget.dataItem);
+        this.async(function () {
+          this.fire('change');
+        });
+        e.stopPropagation();
+      },
+      _setSelectedItem: function (item) {
+        this.selectedItem = item;
+        this.displayValue = this._getDisplayValue(item);
+
+        if (this.valueproperty) {
+          this.value = item ? item[this.valueproperty] : undefined;
+        } else {
+          this.value = item;
+        }
+
+        this.set('_suggestions', []);
+
+      },
+
+      /*Revisit getDisplayValue with iron-list template */
+      _getDisplayValue: function (item) {
+        var ret = item;
+        if (ret && this.displayproperty) {
+          ret = ret[this.displayproperty];
+        }
+        return ret ? ret.toString() : '';
+      },
+      _getRequestUrl: function (searchString) {
+        var re = new RegExp('SEARCH_STRING', 'g');
+        var ret = undefined;
+        if (this.searchurl) {
+          ret = this.searchurl.replace(re, encodeURI(searchString));
+        }
+        return ret;
+      },
+      _onInput: function (e) { // eslint-disable-line no-unused-vars
+
+        var term = this.displayValue;
+
+        if (term == '') {
+          this.set('_suggestions', []);
+          this._setSelectedItem(undefined);
+          return;
+        }
+        if (!this._suggestions) {
+          this.set('_suggestions', []);
+        }
+        if (this.searchurl) {
+          if (term == this.searchString) {
+            this.$.iajax.generateRequest();
+          } else {
+            this.set('searchString', term);
+          }
+        } else {
+          this.set('value', term);
+        }
+      },
+      _fetchModel: function (nVal, oVal) { // eslint-disable-line no-unused-vars
+        //Common Observer for dataurl as well as value property.
+        //Do not rely on nVal or oVal to be value or dataurl.
+
+        //console.log('value changed ', nVal);
+        if (!this.value || this.value.length === 0) {
+          //console.log('newvalue is null');
+          this._setSelectedItem(undefined);
+          return;
+        }
+
+        if (this.selectedItem && (this.selectedItem === this.value || this.value == this.selectedItem[
+            this.valueproperty])) {
+          //console.log('input object is same as newvalue');
+          // new value is same as what is already set
+          return;
+        }
+        var self = this;
+        // when used in demo page, the value changed function is called before the 'dataurl'
+        // property is available, hence a small debouce.
+        //self.debounce('valuechanged', function() {
+        if (typeof this.value === 'object') {
+          this._setSelectedItem(this.value);
+        } else if (this.dataurl && !this.value.startsWith('{{')) {
+          var metaAjax = document.createElement('oe-ajax');
+          metaAjax.contentType = 'application/json';
+          metaAjax.handleAs = 'json';
+
+          var re = new RegExp('VALUE_STRING', 'g');
+          metaAjax.url = this.dataurl.replace(re, encodeURI(this.value));
+          //console.log(metaAjax.url);
+          metaAjax.addEventListener('response', function (event) {
+            var resp = event.detail.response;
+            if(Array.isArray(resp)){
+              //set the first match from response as value
+              //if the response is empty sets undefined as the value
+              self._setSelectedItem(resp[0]);
+            }else{
+              self._setSelectedItem(resp);
+            }
+          });
+          metaAjax.addEventListener('error', function (event) { // eslint-disable-line no-unused-vars
+            self._setSelectedItem(undefined);
+          });
+          metaAjax.generateRequest();
+        } else {
+          console.log('typeahead fetch skipped. url/value is still empty'); // eslint-disable-line no-console
+        }
+        //}, 100);
+      },
+      _templateUrlChanged: function (url) {
+        if (url && url.length) {
+          this.set('isValidTemplate', true);
+        } else {
+          this.set('isValidTemplate', false);
+        }
+      },
+      _validate: function () {
+        var isValid = true;
+        if (this.strict && this.displayValue && !this.selectedItem) {
+          this.setValidity(false, 'no-matching-records');
+          isValid = false;
+        } else if (this.strict && this.displayValue != this._getDisplayValue(this.selectedItem)) {
+          this.setValidity(false, 'invalidValue');
+          isValid = false;
+        } else if (this.required && !this.value) {
+          this.setValidity(false, 'valueMissing');
+          isValid = false;
+        }
+        return isValid;
+      },
+      _suggestionsChanged: function (suggestions) { // eslint-disable-line no-unused-vars
+        if (this._suggestions && this._suggestions.length > 0) {
+          this.$.dropdown.style.width = this.offsetWidth + 'px';
+        }
+      },
+
+      /*
+       * Sorts data based on displayproperty
+       * Kept method as public so that user can overwrite it if needed
+       */
+      sortData: function (a, b) {
+        return this._getDisplayValue(a) > this._getDisplayValue(b) ? 1 : -1;
+      }
+    })
+
+  </script>
+</dom-module>

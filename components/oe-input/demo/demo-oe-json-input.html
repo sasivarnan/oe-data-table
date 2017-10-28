@@ -1,0 +1,67 @@
+<!-- 
+  ©2016-2017 EdgeVerve Systems Limited (a fully owned Infosys subsidiary),
+  Bangalore, India. All Rights Reserved.
+-->
+<!doctype html>
+<html>
+
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+  <meta name="viewport" content="width=device-width, minimum-scale=1.0, initial-scale=1, user-scalable=yes">
+
+  <title>oe-ui demo</title>
+
+  <script src="../../webcomponentsjs/webcomponents-lite.js"></script>
+
+  <link rel="import" href="../../iron-demo-helpers/demo-pages-shared-styles.html">
+  <link rel="import" href="../../iron-demo-helpers/demo-snippet.html">
+  <link rel="import" href="../../paper-styles/paper-styles.html">
+  <link rel="import" href="custom-styles.html">
+  <link rel="import" href="utils.html">
+
+  <link rel="import" href="../oe-json-input.html">
+</head>
+
+<body unresolved>
+
+
+  <div class="vertical-section-container centered">
+    <h3>json inputbox</h3>
+    <demo-snippet>
+      <template>
+        <oe-json-input label="Scope">
+        </oe-json-input>
+      </template>
+    </demo-snippet>
+
+
+    <h3>preset value</h3>
+    <demo-snippet>
+      <template>
+        <oe-json-input label="Scope" value='{"device":"android"}'>
+        </oe-json-input>
+      </template>
+    </demo-snippet>
+
+    <h3>Unparseable preset value</h3>
+    <demo-snippet>
+      <template>
+        <oe-json-input label="Scope" value='{device:"android"}'>
+        </oe-json-input>
+      </template>
+    </demo-snippet>
+
+    <h3>Validations</h3>
+    <demo-snippet>
+      <template>
+        <oe-json-input label="Required Input" required>
+        </oe-json-input>
+      </template>
+    </demo-snippet>
+    
+  </div>
+
+</body>
+
+</html>

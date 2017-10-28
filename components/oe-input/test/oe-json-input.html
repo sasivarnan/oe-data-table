@@ -1,0 +1,92 @@
+<!-- 
+  ©2016-2017 EdgeVerve Systems Limited (a fully owned Infosys subsidiary),
+  Bangalore, India. All Rights Reserved.
+-->
+<!doctype html>
+<html>
+
+<head>
+
+  <title>oe-json-input tests</title>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+  <meta name="viewport" content="width=device-width, minimum-scale=1.0, initial-scale=1, user-scalable=yes">
+
+  <script src="../../webcomponentsjs/webcomponents-lite.js"></script>
+  <script src="../../web-component-tester/browser.js"></script>
+  <script src="../../iron-test-helpers/test-helpers.js"></script>
+  <script src="../../iron-test-helpers/mock-interactions.js"></script>
+
+  <link rel="import" href="../oe-json-input.html">
+
+</head>
+
+<body>
+  <test-fixture id="basic">
+    <template>
+      <oe-json-input></oe-json-input>
+    </template>
+  </test-fixture>
+
+  <test-fixture id="with-value">
+    <template>
+      <oe-json-input value='{"age":6}'></oe-json-input>
+    </template>
+  </test-fixture>
+
+
+  <test-fixture id="with-invalid-value">
+    <template>
+      <oe-json-input value='{age:6}'></oe-json-input>
+    </template>
+  </test-fixture>
+
+  <script>
+    suite('<oe-json-input>', function () {
+
+      test('parses value and sets object', function () {
+        var el = fixture('with-value');
+        expect(el.invalid).to.not.equal(true);
+        expect(el.errorMessage).to.not.exist;
+        expect(el.value).to.deep.equal({
+          age: 6
+        });
+      });
+
+      test('sets error on initial parse', function () {
+        var el = fixture('with-invalid-value');
+        expect(el.invalid).to.equal(true);
+        expect(el.errorMessage).to.exist;
+        expect(el.value).to.equal(null);
+        expect(el.displayValue).to.equal('{age:6}');
+      });
+
+      test('Setting value updates the display', function () {
+        var data = {
+          name: 'rohit'
+        };
+        var el = fixture('basic');
+        el.set('value', data);
+        expect(el.displayValue).to.equal(JSON.stringify(data, undefined, 2));
+      });
+
+      test('changing input updates the value and display', function () {
+
+        var text = '{"name":"rohit"}';
+        var data = JSON.parse(text);
+
+        var el = fixture('basic');
+        el.set('displayValue', text);
+
+        el.$.input.fire('change');
+
+        expect(el.displayValue).to.equal(JSON.stringify(data, undefined, 2));
+        expect(el.value).to.deep.equal(data);
+      });
+
+    });
+
+  </script>
+</body>
+
+</html>

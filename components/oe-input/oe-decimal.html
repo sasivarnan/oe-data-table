@@ -1,0 +1,114 @@
+<!-- 
+  ©2016-2017 EdgeVerve Systems Limited (a fully owned Infosys subsidiary),
+  Bangalore, India. All Rights Reserved.
+-->
+
+<link rel="import" href="../polymer/polymer.html">
+<link rel="import" href="../iron-form-element-behavior/iron-form-element-behavior.html">
+<link rel="import" href="../iron-input/iron-input.html">
+<link rel="import" href="../paper-input/paper-input-behavior.html">
+<link rel="import" href="../paper-input/paper-input-container.html">
+<link rel="import" href="../oe-i18n-msg/oe-i18n-msg.html">
+<link rel="import" href="../oe-input-error/oe-input-error.html">
+<link rel="import" href="behaviors/oe-decimal-behavior.html">
+<link rel="import" href="../oe-field-behavior/oe-field-behavior.html">
+
+<!--
+### oe-decimal
+
+`<oe-decimal>` is a control for capturing number inputs with following features.
+
+  1. control level validations
+  2. model-level/cross-field validations. When any UI control is placed on the form, the control needs to be 'aware' of 'which property' on the model it is bound to. This is required specially since, many times two or more controls take part in deciding the model validity. (cross-field-validations)
+  3. support internationalization of labels and error-messages out of box.
+  4. `oe-decimal` adds a little red-asterisk if the field is 'required'.
+  5. Handling of decimal display, parsing and formatting.
+
+    <oe-decimal required field-id="interestRate" label="Rate" precision=2></oe-decimal>
+
+### Styling
+
+The following custom properties and mixins are available for styling:
+
+CSS Variable | Description | Default
+----------------|-------------|----------
+`--paper-input-container-invalid-color` | Color applied to asterisk indicating, required field | --paper-deep-orange-a700`
+`--paper-input-container-color`         | Default container color        | `--secondary-text-color`
+
+@demo demo/demo-oe-decimal.html
+-->
+<dom-module id="oe-decimal">
+  <template>
+    <style>
+      :host {
+        display: block;
+      }
+
+      span.required {
+        vertical-align: bottom;
+        color: var(--paper-input-container-invalid-color, --paper-deep-orange-a700);
+      }
+
+      paper-input-container {
+        display: inline-block;
+        width: 100%;
+      }
+
+      input::-webkit-input-placeholder {
+        color: var(--paper-input-container-color, --secondary-text-color);
+      }
+
+      input:-moz-placeholder {
+        color: var(--paper-input-container-color, --secondary-text-color);
+      }
+
+      input::-moz-placeholder {
+        color: var(--paper-input-container-color, --secondary-text-color);
+      }
+
+      input:-ms-input-placeholder {
+        color: var(--paper-input-container-color, --secondary-text-color);
+      }
+
+    </style>
+    <paper-input-container no-label-float="[[noLabelFloat]]" always-float-label="[[_computeAlwaysFloatLabel(alwaysFloatLabel,placeholder)]]"
+      auto-validate$="[[autoValidate]]" disabled$="[[disabled]]" invalid="[[invalid]]">
+      <content select="[prefix]"></content>
+      <label hidden$="[[!label]]">
+            <oe-i18n-msg msgid=[[label]]>[[label]]</oe-i18n-msg>
+            <template is="dom-if" if={{required}}>
+                <span class="required"> *</span>
+            </template>
+      </label>
+
+      <!--TODO : pattern, minlength,maxlength, type etc are not required. -->
+      <input is="iron-input" id="input" aria-labelledby$="[[_ariaLabelledBy]]" aria-describedby$="[[_ariaDescribedBy]]" disabled$="[[disabled]]"
+        invalid="{{invalid}}" prevent-invalid-input="[[preventInvalidInput]]" allowed-pattern="[[allowedPattern]]" validator="[[validator]]"
+        type$="[[type]]" pattern$="[[pattern]]" required$="[[required]]" autocomplete$="[[autocomplete]]" autofocus$="[[autofocus]]"
+        inputmode$="[[inputmode]]" minlength$="[[minlength]]" maxlength$="[[maxlength]]" min$="[[min]]" max$="[[max]]" step$="[[step]]"
+        name$="[[name]]" placeholder$="[[placeholder]]" readonly$="[[readonly]]" list$="[[list]]" size$="[[size]]" autocapitalize$="[[autocapitalize]]"
+        autocorrect$="[[autocorrect]]" on-change="_onChange" tabindex$="[[tabindex]]" autosave$="[[autosave]]" results$="[[results]]"
+        accept$="[[accept]]" multiple$="[[multiple]]">
+      <template id="x" is="dom-if" if="{{percentage}}">
+        <div suffix>%</div>
+      </template>
+      <template is="dom-if" if="{{!percentage}}">
+        <content select="[suffix]"></content>
+      </template>
+      <oe-input-error error-message={{errorMessage}} placeholders={{errorPlaceholders}} invalid={{invalid}}></oe-input-error>
+    </paper-input-container>
+  </template>
+</dom-module>
+<script>
+  Polymer({
+    is: 'oe-decimal',
+    properties: {},
+    behaviors: [
+      Polymer.IronFormElementBehavior,
+      Polymer.IronValidatableBehavior,
+      OEUtils.DecimalInputBehavior,
+      OEUtils.FieldBehavior
+    ]
+  });
+
+</script>

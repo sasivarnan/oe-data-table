@@ -1,0 +1,22 @@
+{
+  "name": "oe-utils",
+  "description": "Util Library for oe-ui elements",
+  "main": [
+    "oe-utils.js",
+    "date-utils.js"
+  ],
+  "devDependencies": {
+    "web-component-tester": "Polymer/web-component-tester#^5.0.1"
+  },
+  "homepage": "https://github.com/EdgeVerve/oe-utils",
+  "version": "0.9.1",
+  "_release": "0.9.1",
+  "_resolution": {
+    "type": "version",
+    "tag": "0.9.1",
+    "commit": "078c474959fc0287011fcf9b39d3f84b6cae3bb3"
+  },
+  "_source": "https://github.com/EdgeVerve/oe-utils.git",
+  "_target": "^0.9.0",
+  "_originalSource": "oe-utils"
+}

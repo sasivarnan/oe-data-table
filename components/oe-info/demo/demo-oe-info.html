@@ -1,0 +1,99 @@
+<!-- 
+  ©2016-2017 EdgeVerve Systems Limited (a fully owned Infosys subsidiary),
+  Bangalore, India. All Rights Reserved.
+-->
+
+<!doctype html>
+<html>
+
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+  <meta name="viewport" content="width=device-width, minimum-scale=1.0, initial-scale=1, user-scalable=yes">
+
+  <title>evf-ui demo</title>
+
+  <script src="../../webcomponentsjs/webcomponents-lite.js"></script>
+
+  <link rel="import" href="../../iron-demo-helpers/demo-pages-shared-styles.html">
+  <link rel="import" href="../../iron-demo-helpers/demo-snippet.html">
+  <link rel="import" href="../../paper-styles/paper-styles.html">
+  <link rel="import" href="custom-styles.html">
+  <link rel="import" href="utils.html">
+
+  <link rel="import" href="../oe-info.html">
+  <link rel="import" href="../../paper-checkbox/paper-checkbox.html">
+
+</head>
+
+<body unresolved>
+
+  <div class="vertical-section-container centered">
+    <h3>Simple</h3>
+    <demo-snippet>
+      <template>
+        <oe-info label="account" value="IBAN4923043423434"></oe-info>
+      </template>
+    </demo-snippet>
+
+
+    <h3>Boolean</h3>
+    <demo-snippet>
+      <template>
+        <template is="dom-bind">
+          <oe-info label="Default" type="boolean" value="{{isChecked}}"></oe-info>
+          <paper-checkbox checked={{isChecked}}>Toggle</paper-checkbox>
+        </template>
+      </template>
+    </demo-snippet>
+
+
+    <h3>Number</h3>
+    <demo-snippet>
+      <template>
+        <oe-info label="No precision" type="number" value="4343.34234342"></oe-info>
+        <oe-info label="Precision=2" type="number" precision=2 value="3423434.34324"></oe-info>
+      </template>
+    </demo-snippet>
+
+    <h3>Date</h3>
+    <demo-snippet>
+      <template>
+        <oe-info label="No Format" type="date" value="2016-02-26"></oe-info>
+        <oe-info label="With Format" type="date" format="ddd DD-MMM-YYYY" value="2016-02-26"></oe-info>
+      </template>
+    </demo-snippet>
+
+    <h3>Timestamp</h3>
+    <demo-snippet>
+      <template>
+        <oe-info label="No Format" type="timestamp" value="2016-03-24T07:29:32.354Z"></oe-info>
+        <oe-info label="With Format" type="timestamp" format="ddd DD-MMM-YYYY hh:mm:ss AZZ" value="2016-05-27T07:29:32.354Z"></oe-info>
+        <oe-info label="Input in different timezone" type="timestamp" format="ddd DD-MMM-YYYY hh:mm:ss AZZ" value="2016-05-27T07:29:32.354-0500"></oe-info>
+      </template>
+    </demo-snippet>
+
+    <h3>Layout</h3>
+    <demo-snippet>
+      <template>
+        <oe-info layout="horizontal" label="account" value="IBAN4923043423434"></oe-info>
+        <oe-info layout="horizontal" label="Precision=2" type="number" precision=2 value="3423434.34324"></oe-info>
+        <oe-info layout="horizontal" label="With Format" type="date" format="ddd DD-MMM-YYYY" value="2016-02-26"></oe-info>
+      </template>
+    </demo-snippet>
+
+    <h3>Masking Data</h3>
+    <demo-snippet>
+      <template>
+        <oe-info label="CVC 1" value="123" mask-pattern="^[\d]{2}"></oe-info>
+        <oe-info label="CVC 2" value="123" mask-pattern="[\d]{2}$" mask-char="@"></oe-info>
+        <oe-info label="Credit Card 1" value="1800-1800-1800-1800" mask-pattern="^[\d]{4}"></oe-info>
+        <oe-info label="Credit Card 2" value="1800-1800-1800-1800" mask-pattern="[\d]{4}-" mask-string="XXXX-" mask-pattern-flag="g"></oe-info>
+        <oe-info label="email" value="user@evf.com" mask-pattern="@[\w]+.*" mask-string="@example.com"></oe-info>
+      </template>
+    </demo-snippet>
+
+  </div>
+</body>
+
+</html>

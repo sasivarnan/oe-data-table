@@ -1,0 +1,66 @@
+<!-- 
+  ©2016-2017 EdgeVerve Systems Limited (a fully owned Infosys subsidiary),
+  Bangalore, India. All Rights Reserved.
+-->
+<!doctype html>
+<html>
+
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+  <meta name="viewport" content="width=device-width, minimum-scale=1.0, initial-scale=1, user-scalable=yes">
+
+  <title>oe-ui demo</title>
+
+  <script src="../../webcomponentsjs/webcomponents-lite.js"></script>
+
+  <link rel="import" href="../../iron-demo-helpers/demo-pages-shared-styles.html">
+  <link rel="import" href="../../iron-demo-helpers/demo-snippet.html">
+  <link rel="import" href="../../paper-styles/paper-styles.html">
+  <link rel="import" href="custom-styles.html">
+  <link rel="import" href="utils.html">
+
+  <link rel="import" href="../oe-input-masked.html">
+
+</head>
+
+<body unresolved>
+
+
+  <div class="vertical-section-container centered">
+
+    <h3>Inputs can have sequence of numbers which can be hidden</h3>
+    <demo-snippet>
+      <template>
+        <oe-input-masked mask-pattern="[\d]{4}" mask-pattern-flag="g"></oe-input-masked>
+      </template>
+    </demo-snippet>
+
+  </div>
+
+
+  <div class="vertical-section-container centered">
+
+    <h3>Inputs can hide every character typed</h3>
+    <demo-snippet>
+      <template>
+        <oe-input-masked mask-pattern=".*" mask-pattern-flag="g" mask-char="*"></oe-input-masked>
+      </template>
+    </demo-snippet>
+
+  </div>
+
+  <div class="vertical-section-container centered">
+
+    <h3>Inputs can append specified number of masking char after blur</h3>
+    <demo-snippet>
+      <template>
+        <oe-input-masked mask-pattern=".*" mask-pattern-flag="g" mask-char="*" append-char-length=20></oe-input-masked>
+      </template>
+    </demo-snippet>
+
+  </div>
+
+</body>
+
+</html>

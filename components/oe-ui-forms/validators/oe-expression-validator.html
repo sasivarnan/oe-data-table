@@ -1,0 +1,105 @@
+<!--
+  ©2016-2017 EdgeVerve Systems Limited (a fully owned Infosys subsidiary),
+  Bangalore, India. All Rights Reserved.
+-->
+<link rel="import" href="../../polymer/polymer.html">
+
+<!--
+`oe-expression-validator` evaluates an `expression` on the bound `model` to decide the model validity.
+-->
+<script>
+  Polymer({
+    is: 'oe-expression-validator',
+    hostAttributes: {
+      'hidden': true
+    },
+
+    /**
+     * Fired when validator is attached
+     *
+     * @event register-validator
+     */
+
+    /**
+     * Fired when validation fails
+     *
+     * @event oe-validator-error
+     */
+
+    /**
+     * Fired when validation succeeds
+     *
+     * @event oe-validator-ok
+     */
+
+    properties: {
+
+      /**
+       * fields that would participate in validation
+       */
+      fields: {
+        type: Array
+      },
+
+      /**
+       * Model on which expression will be evaluated
+       */
+      model: {
+        type: Object
+      },
+
+      /**
+       * validation expression
+       */
+      expression: {
+        type: String
+      },
+
+      /**
+       * error message/code to raise when validation fails
+       */
+      error: {
+        type: String,
+        value: 'Invalid Combination'
+      }
+    },
+    attached: function () {
+      if (!this.expression) {
+        console.warn(this.is, ' expects expression');
+      }
+
+      this._evalFunc = new Function(this.fields, 'return (' + this.expression + ');');
+      this.fire('register-validator', this.fields);
+    },
+    _deepValue: function (obj, path) {
+      for (var i = 0, path = path.split('.'), len = path.length; obj && i < len; i++) { // eslint-disable-line no-redeclare
+        obj = obj[path[i]];
+      }
+      return obj;
+    },
+
+    /**
+     * Performs validation and triggers appropriate validation event.
+     */
+    validate: function () {
+      var values = [];
+
+      for (var idx in this.fields) {
+        var value = this._deepValue(this.model, this.fields[idx]);
+        values.push(value);
+      }
+
+      var valid = this._evalFunc.apply(this, values);
+      if (!valid) {
+        this.fire('oe-validator-error', this.error);
+      } else {
+        this.fire('oe-validator-ok');
+      }
+      return Promise.resolve({
+        valid: valid,
+        message: this.error
+      });
+    }
+  });
+
+</script>
